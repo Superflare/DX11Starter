@@ -3,6 +3,9 @@
 #include "Input.h"
 #include "Helpers.h"
 #include "BufferStructs.h"
+#include "ImGui/imgui.h"
+#include "ImGui/imgui_impl_dx11.h"
+#include "ImGui/imgui_impl_win32.h"
 
 // Needed for a helper function to load pre-compiled shader files
 #pragma comment(lib, "d3dcompiler.lib")
@@ -53,6 +56,11 @@ Game::~Game()
 
 	// Call Release() on any Direct3D objects made within this class
 	// - Note: this is unnecessary for D3D objects stored in ComPtrs
+
+	// ImGui clean up
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
 }
 
 // --------------------------------------------------------
@@ -66,6 +74,13 @@ void Game::Init()
 	//  - You'll be expanding and/or replacing these later
 	LoadShaders();
 	CreateGeometry();
+
+	// Initialize ImGui itself & platform/renderer backends
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui_ImplWin32_Init(hWnd);
+	ImGui_ImplDX11_Init(device.Get(), context.Get());
+	ImGui::StyleColorsDark();
 
 	// Create a list of Game Entities to be rendered to the screen and initialize their starting transforms
 	// Not every mesh used in the game entities is centered at the origin so transformations are relative
@@ -281,6 +296,44 @@ void Game::CreateGeometry()
 #pragma endregion
 }
 
+void Game::UpdateUI(float dt)
+{
+	// Get a reference to our custom input manager
+	Input& input = Input::GetInstance();
+
+	// Reset input manager's gui state so we don't
+	input.SetKeyboardCapture(false);
+	input.SetMouseCapture(false);
+
+	// Feed fresh input data to ImGui
+	ImGuiIO& io = ImGui::GetIO();
+	io.DeltaTime = dt;
+	io.DisplaySize.x = (float)this->windowWidth;
+	io.DisplaySize.y = (float)this->windowHeight;
+	io.KeyCtrl = input.KeyDown(VK_CONTROL);
+	io.KeyShift = input.KeyDown(VK_SHIFT);
+	io.KeyAlt = input.KeyDown(VK_MENU);
+	io.MousePos.x = (float)input.GetMouseX();
+	io.MousePos.y = (float)input.GetMouseY();
+	io.MouseDown[0] = input.MouseLeftDown();
+	io.MouseDown[1] = input.MouseRightDown();
+	io.MouseDown[2] = input.MouseMiddleDown();
+	io.MouseWheel = input.GetMouseWheel();
+	input.GetKeyArray(io.KeysDown, 256);
+
+	// Reset the frame
+	ImGui_ImplDX11_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
+
+	// Determine new input capture
+	input.SetKeyboardCapture(io.WantCaptureKeyboard);
+	input.SetMouseCapture(io.WantCaptureMouse);
+
+	// Show the demo window
+	ImGui::ShowDemoWindow();
+}
+
 
 // --------------------------------------------------------
 // Handle resizing to match the new window size.
@@ -306,6 +359,8 @@ void Game::Update(float deltaTime, float totalTime)
 	// Example input checking: Quit if the escape key is pressed
 	if (Input::GetInstance().KeyDown(VK_ESCAPE))
 		Quit();
+
+	UpdateUI(deltaTime);
 
 	// Update the camera
 	if (camera != 0)
@@ -346,6 +401,10 @@ void Game::Draw(float deltaTime, float totalTime)
 	{
 		entities[i]->Draw(context, vsConstantBuffer, camera);
 	}
+
+	// Draw ImGui UI
+	ImGui::Render();
+	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
 	// Frame END
 	// - These should happen exactly ONCE PER FRAME
