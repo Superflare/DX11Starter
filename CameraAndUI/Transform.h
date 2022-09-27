@@ -15,6 +15,8 @@ public:
 	void SetScale(DirectX::XMFLOAT3 size);
 	void SetRotation(float x, float y, float z, float w);
 	void SetRotation(DirectX::XMFLOAT4 rot);
+	void SetRotation(DirectX::XMVECTOR rot);
+	void SetRotation(float pitch, float yaw, float roll);
 
 	DirectX::XMFLOAT3 GetPosition();
 	DirectX::XMFLOAT3 GetScale();
@@ -34,8 +36,8 @@ public:
 	void Scale(DirectX::XMFLOAT3 size);
 	void Rotate(float pitch, float yaw, float roll);
 	void Rotate(float radians, DirectX::XMFLOAT3 rotateAround = DirectX::XMFLOAT3(0, 0, -1.0f));
-	void ReverseRotation(float radiansRotated, DirectX::XMFLOAT3 rotatedAround);
 
+	void UpdateLocalAxes();
 	DirectX::XMFLOAT3 GetRight();
 	DirectX::XMFLOAT3 GetUp();
 	DirectX::XMFLOAT3 GetForward();
@@ -53,5 +55,6 @@ private:
 	DirectX::XMFLOAT3 forwardVector;
 
 	bool transformChanged;
+	bool rotationChanged;
 };
 

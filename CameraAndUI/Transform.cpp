@@ -10,7 +10,8 @@ Transform::Transform(DirectX::XMFLOAT3 position, DirectX::XMFLOAT3 scale, Direct
 	position(position),
 	scale(scale),
 	rotation(rotation),
-	transformChanged(true)
+	transformChanged(true),
+	rotationChanged(true)
 {
 	XMStoreFloat4x4(&worldMatrix, XMMatrixIdentity());
 	XMStoreFloat4x4(&worldInverseTransposeMatrix, XMMatrixIdentity());
@@ -65,6 +66,7 @@ void Transform::SetRotation(float x, float y, float z, float w)
 	rotation.w = w;
 
 	transformChanged = true;
+	rotationChanged = true;
 }
 
 void Transform::SetRotation(DirectX::XMFLOAT4 rot)
@@ -72,6 +74,23 @@ void Transform::SetRotation(DirectX::XMFLOAT4 rot)
 	rotation = rot;
 
 	transformChanged = true;
+	rotationChanged = true;
+}
+
+void Transform::SetRotation(DirectX::XMVECTOR rot)
+{
+	XMStoreFloat4(&rotation, rot);
+
+	transformChanged = true;
+	rotationChanged = true;
+}
+
+void Transform::SetRotation(float pitch, float yaw, float roll)
+{
+	XMStoreFloat4(&rotation, XMQuaternionRotationRollPitchYaw(pitch, yaw, roll));
+
+	transformChanged = true;
+	rotationChanged = true;
 }
 
 DirectX::XMFLOAT3 Transform::GetPosition()
@@ -152,6 +171,8 @@ void Transform::Scale(DirectX::XMFLOAT3 size)
 	scale.x *= size.x;
 	scale.y *= size.y;
 	scale.z *= size.z;
+
+	transformChanged = true;
 }
 
 void Transform::Rotate(float pitch, float yaw, float roll)
@@ -162,6 +183,7 @@ void Transform::Rotate(float pitch, float yaw, float roll)
 	XMStoreFloat4(&rotation, combinedQuaternion);
 
 	transformChanged = true;
+	rotationChanged = true;
 }
 
 void Transform::Rotate(float radians, DirectX::XMFLOAT3 rotateAround)
@@ -172,42 +194,50 @@ void Transform::Rotate(float radians, DirectX::XMFLOAT3 rotateAround)
 	XMStoreFloat4(&rotation, combinedQuaternion);
 
 	transformChanged = true;
+	rotationChanged = true;
 }
 
-void Transform::ReverseRotation(float radiansRotated, DirectX::XMFLOAT3 rotatedAround)
+void Transform::UpdateLocalAxes()
 {
-	XMVECTOR prevRotation = XMQuaternionRotationNormal(XMLoadFloat3(&rotatedAround), radiansRotated);
-	XMVECTOR invertRotation = XMQuaternionInverse(prevRotation);
-	XMVECTOR combinedQuaternion = XMQuaternionMultiply(XMLoadFloat4(&rotation), invertRotation);
-
-	XMStoreFloat4(&rotation, combinedQuaternion);
-
-	transformChanged = true;
+	XMVECTOR worldRight = XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f);
+	XMVECTOR worldUp = XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
+	XMVECTOR worldForward = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
+	XMVECTOR rot = XMLoadFloat4(&rotation);
+	
+	XMStoreFloat3(&rightVector, XMVector3Rotate(worldRight, rot));
+	XMStoreFloat3(&upVector, XMVector3Rotate(worldUp, rot));
+	XMStoreFloat3(&forwardVector, XMVector3Rotate(worldForward, rot));
 }
 
 DirectX::XMFLOAT3 Transform::GetRight()
 {
-	XMVECTOR worldRight = XMVectorSet(1.0f, 0.0f, 0.0f, 1.0f);
-	XMVECTOR rot = XMVectorSet(rotation.x, rotation.y, rotation.z, rotation.w);
-	XMStoreFloat3(&rightVector, XMVector4Normalize(XMVector3Rotate(worldRight, rot)));
+	if (rotationChanged)
+	{
+		UpdateLocalAxes();
+		rotationChanged = false;
+	}
 
 	return rightVector;
 }
 
 DirectX::XMFLOAT3 Transform::GetUp()
 {
-	XMVECTOR worldUp = XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
-	XMVECTOR rot = XMVectorSet(rotation.x, rotation.y, rotation.z, rotation.w);
-	XMStoreFloat3(&upVector, XMVector4Normalize(XMVector3Rotate(worldUp, rot)));
+	if (rotationChanged)
+	{
+		UpdateLocalAxes();
+		rotationChanged = false;
+	}
 
 	return upVector;
 }
 
 DirectX::XMFLOAT3 Transform::GetForward()
 {
-	XMVECTOR worldForward = XMVectorSet(0.0f, 0.0f, 1.0f, 1.0f);
-	XMVECTOR rot = XMVectorSet(rotation.x, rotation.y, rotation.z, rotation.w);
-	XMStoreFloat3(&forwardVector, XMVector4Normalize(XMVector3Rotate(worldForward, rot)));
+	if (rotationChanged)
+	{
+		UpdateLocalAxes();
+		rotationChanged = false;
+	}
 
 	return forwardVector;
 }

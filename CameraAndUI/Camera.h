@@ -17,6 +17,7 @@ public:
 
 	void UpdateViewMatrix();
 	void UpdateProjectionMatrix(float aspect);
+	void SyncRotationWithTransform();
 
 	DirectX::XMFLOAT4X4 GetViewMatrix();
 	DirectX::XMFLOAT4X4 GetProjectionMatrix();
@@ -34,5 +35,8 @@ private:
 	float movSpeed;
 	float mouseSpeed;
 	ProjectionType projType;
+
+	float pitch;
+	float yaw;
 };
 
