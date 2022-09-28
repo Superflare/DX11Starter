@@ -1,4 +1,5 @@
 #include "Transform.h"
+#include <cmath>
 using namespace DirectX;
 
 Transform::Transform() : Transform(XMFLOAT3(0.0f, 0.0f, 0.0f), XMFLOAT3(1.0f, 1.0f, 1.0f), XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f))
@@ -15,6 +16,7 @@ Transform::Transform(DirectX::XMFLOAT3 position, DirectX::XMFLOAT3 scale, Direct
 {
 	XMStoreFloat4x4(&worldMatrix, XMMatrixIdentity());
 	XMStoreFloat4x4(&worldInverseTransposeMatrix, XMMatrixIdentity());
+	pitchYawRoll = GetPitchYawRoll();
 }
 
 void Transform::SetPosition(float x, float y, float z)
@@ -106,6 +108,42 @@ DirectX::XMFLOAT3 Transform::GetScale()
 DirectX::XMFLOAT4 Transform::GetRotation()
 {
 	return rotation;
+}
+
+void Transform::UpdatePitchYawRoll()
+{
+	// Rotation around x-axis
+	float sinr_cosp = 2 * (rotation.w * rotation.x + rotation.y * rotation.z);
+	float cosr_cosp = 1 - 2 * (rotation.x * rotation.x * rotation.y * rotation.y);
+	pitchYawRoll.x = atan2(sinr_cosp, cosr_cosp);
+
+	// Rotation around y-axis
+	float sinp = 2 * (rotation.w * rotation.y - rotation.z * rotation.x);
+	if (abs(sinp) >= 1)
+	{
+		pitchYawRoll.y = copysign(XM_PIDIV2, sinp);
+	}
+	else
+	{
+		pitchYawRoll.y = asin(sinp);
+	}
+
+	// Rotation around z-axis
+	float siny_cosp = 2 * (rotation.w * rotation.z + rotation.x * rotation.y);
+	float cosy_cosp = 1 - 2 * (rotation.y * rotation.y + rotation.z * rotation.z);
+	pitchYawRoll.z = atan2(siny_cosp, cosy_cosp);
+}
+
+DirectX::XMFLOAT3 Transform::GetPitchYawRoll()
+{
+	if (rotationChanged)
+	{
+		UpdatePitchYawRoll();
+		UpdateLocalAxes();
+		rotationChanged = false;
+	}
+
+	return pitchYawRoll;
 }
 
 void Transform::MoveAbsolute(float x, float y, float z)
@@ -214,6 +252,7 @@ DirectX::XMFLOAT3 Transform::GetRight()
 	if (rotationChanged)
 	{
 		UpdateLocalAxes();
+		UpdatePitchYawRoll();
 		rotationChanged = false;
 	}
 
@@ -225,6 +264,7 @@ DirectX::XMFLOAT3 Transform::GetUp()
 	if (rotationChanged)
 	{
 		UpdateLocalAxes();
+		UpdatePitchYawRoll();
 		rotationChanged = false;
 	}
 
@@ -236,6 +276,7 @@ DirectX::XMFLOAT3 Transform::GetForward()
 	if (rotationChanged)
 	{
 		UpdateLocalAxes();
+		UpdatePitchYawRoll();
 		rotationChanged = false;
 	}
 

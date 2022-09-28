@@ -22,6 +22,9 @@ public:
 	DirectX::XMFLOAT3 GetScale();
 	DirectX::XMFLOAT4 GetRotation();
 
+	void UpdatePitchYawRoll();
+	DirectX::XMFLOAT3 GetPitchYawRoll();
+
 	void UpdateWorldMatrix();
 	DirectX::XMFLOAT4X4 GetWorldMatrix();
 	DirectX::XMFLOAT4X4 GetWorldInverseTransposeMatrix();
@@ -49,6 +52,7 @@ private:
 	DirectX::XMFLOAT3 position;
 	DirectX::XMFLOAT3 scale;
 	DirectX::XMFLOAT4 rotation;
+	DirectX::XMFLOAT3 pitchYawRoll;
 
 	DirectX::XMFLOAT3 rightVector;
 	DirectX::XMFLOAT3 upVector;

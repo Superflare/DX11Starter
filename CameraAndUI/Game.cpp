@@ -3,9 +3,7 @@
 #include "Input.h"
 #include "Helpers.h"
 #include "BufferStructs.h"
-#include "ImGui/imgui.h"
-#include "ImGui/imgui_impl_dx11.h"
-#include "ImGui/imgui_impl_win32.h"
+#include "ImGuiMenus.h"
 
 // Needed for a helper function to load pre-compiled shader files
 #pragma comment(lib, "d3dcompiler.lib")
@@ -96,11 +94,11 @@ void Game::Init()
 		darkTint.colorTint = XMFLOAT4(0.3f, 0.3f, 0.3f, 1.0f);
 
 		// Set up the Game Entity list using the pre-created meshes
-		entities.push_back(std::make_unique<GameEntity>(meshes[0]));
-		entities.push_back(std::make_unique<GameEntity>(meshes[0], greenTint));
-		entities.push_back(std::make_unique<GameEntity>(meshes[1]));
-		entities.push_back(std::make_unique<GameEntity>(meshes[2], redTint));
-		entities.push_back(std::make_unique<GameEntity>(meshes[0], darkTint));
+		entities.push_back(std::make_shared<GameEntity>(meshes[0]));
+		entities.push_back(std::make_shared<GameEntity>(meshes[0], greenTint));
+		entities.push_back(std::make_shared<GameEntity>(meshes[1]));
+		entities.push_back(std::make_shared<GameEntity>(meshes[2], redTint));
+		entities.push_back(std::make_shared<GameEntity>(meshes[0], darkTint));
 
 		entities[1]->GetTransform()->MoveAbsolute(-0.5f, 0.5f, 0);
 		entities[1]->GetTransform()->Scale(0.3f);
@@ -329,9 +327,6 @@ void Game::UpdateUI(float dt)
 	// Determine new input capture
 	input.SetKeyboardCapture(io.WantCaptureKeyboard);
 	input.SetMouseCapture(io.WantCaptureMouse);
-
-	// Show the demo window
-	ImGui::ShowDemoWindow();
 }
 
 
@@ -361,6 +356,8 @@ void Game::Update(float deltaTime, float totalTime)
 		Quit();
 
 	UpdateUI(deltaTime);
+	ImGuiMenus::WindowStats(windowWidth, windowHeight);
+	ImGuiMenus::EditScene(camera, entities);
 
 	// Update the camera
 	if (camera != 0)

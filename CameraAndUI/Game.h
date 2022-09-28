@@ -45,7 +45,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
 
 	std::vector<std::shared_ptr<Mesh>> meshes;
-	std::vector<std::unique_ptr<GameEntity>> entities;
+	std::vector<std::shared_ptr<GameEntity>> entities;
 	std::shared_ptr<Camera> camera;
 };
 

@@ -1,6 +1,5 @@
 #include "Camera.h"
 #include "Input.h"
-#include <cmath>
 using namespace DirectX;
 
 Camera::Camera(DirectX::XMFLOAT3 startPos, DirectX::XMFLOAT4 startRot,
@@ -9,6 +8,7 @@ Camera::Camera(DirectX::XMFLOAT3 startPos, DirectX::XMFLOAT4 startRot,
 	float movSpeed, float mouseSpeed,
 	ProjectionType projType)
 	:
+	aspect(aspect),
 	fov(fov),
 	nearClip(nearClip),
 	farClip(farClip),
@@ -16,7 +16,8 @@ Camera::Camera(DirectX::XMFLOAT3 startPos, DirectX::XMFLOAT4 startRot,
 	mouseSpeed(mouseSpeed),
 	projType(projType),
 	pitch(0.0f),
-	yaw(0.0f)
+	yaw(0.0f),
+	roll(0.0f)
 {
 	transform = Transform(startPos, XMFLOAT3(1.0f, 1.0f, 1.0f), startRot);
 
@@ -37,10 +38,11 @@ void Camera::UpdateViewMatrix()
 	XMStoreFloat4x4(&viewMatrix, XMMatrixLookToLH(pos, lookDir, upDir));
 }
 
-void Camera::UpdateProjectionMatrix(float aspect)
+void Camera::UpdateProjectionMatrix(float aspectRatio)
 {
 	if (projType == Perspective)
 	{
+		aspect = aspectRatio;
 		XMStoreFloat4x4(&projMatrix, XMMatrixPerspectiveFovLH(fov, aspect, nearClip, farClip));
 	}
 	else if (projType == Orthographic)
@@ -53,23 +55,11 @@ void Camera::UpdateProjectionMatrix(float aspect)
 // Used to update camera's internal pitch and yaw fields when it is rotated from outside of Update()
 void Camera::SyncRotationWithTransform()
 {
-	XMFLOAT4 q = transform.GetRotation();
+	XMFLOAT3 pitchYawRoll = transform.GetPitchYawRoll();
 
-	// Rotation around x-axis
-	float sinr_cosp = 2 * (q.w * q.x + q.y * q.z);
-	float cosr_cosp = 1 - 2 * (q.x * q.x * q.y * q.y);
-	pitch = atan2(sinr_cosp, cosr_cosp);
-
-	// Rotation around y-axis
-	float sinp = 2 * (q.w * q.y - q.z * q.x);
-	if (abs(sinp) >= 1)
-	{
-		yaw = copysign(XM_PIDIV2, sinp);
-	}
-	else
-	{
-		yaw = asin(sinp);
-	}
+	pitch = pitchYawRoll.x;
+	yaw = pitchYawRoll.y;
+	roll = pitchYawRoll.z;
 }
 
 DirectX::XMFLOAT4X4 Camera::GetViewMatrix()
@@ -80,6 +70,55 @@ DirectX::XMFLOAT4X4 Camera::GetViewMatrix()
 DirectX::XMFLOAT4X4 Camera::GetProjectionMatrix()
 {
 	return projMatrix;
+}
+
+Transform* Camera::GetTransform()
+{
+	return &transform;
+}
+
+float Camera::GetFov()
+{
+	return fov;
+}
+
+float Camera::GetNearClip()
+{
+	return nearClip;
+}
+
+float Camera::GetFarClip()
+{
+	return farClip;
+}
+
+Camera::ProjectionType Camera::GetProjectionType()
+{
+	return projType;
+}
+
+void Camera::SetFov(float val)
+{
+	fov = val;
+	UpdateProjectionMatrix(aspect);
+}
+
+void Camera::SetNearClip(float val)
+{
+	nearClip = val;
+	UpdateProjectionMatrix(aspect);
+}
+
+void Camera::SetFarClip(float val)
+{
+	farClip = val;
+	UpdateProjectionMatrix(aspect);
+}
+
+void Camera::SetProjectionType(ProjectionType val)
+{
+	projType = val;
+	UpdateProjectionMatrix(aspect);
 }
 
 void Camera::Update(float dt)
@@ -161,7 +200,7 @@ void Camera::Update(float dt)
 				pitch = XM_PIDIV2;
 			}
 
-			transform.SetRotation(pitch, yaw, 0);
+			transform.SetRotation(pitch, yaw, roll);
 		}
 		else if (cursorMovementY < 0)
 		{
@@ -173,20 +212,20 @@ void Camera::Update(float dt)
 				pitch = -XM_PIDIV2;
 			}
 
-			transform.SetRotation(pitch, yaw, 0);
+			transform.SetRotation(pitch, yaw, roll);
 		}
 
 		if (cursorMovementX > 0)
 		{
 			yaw += mouseSpeed * dt;
 
-			transform.SetRotation(pitch, yaw, 0);
+			transform.SetRotation(pitch, yaw, roll);
 		}
 		else if (cursorMovementX < 0)
 		{
 			yaw -= mouseSpeed * dt;
 
-			transform.SetRotation(pitch, yaw, 0);
+			transform.SetRotation(pitch, yaw, roll);
 		}
 	}
 

@@ -12,11 +12,11 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{acfc80f5-04ae-4b87-a7f6-6b4ba0af6a98}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\ImGui">
-      <UniqueIdentifier>{f0730149-e943-431c-9a4f-0f317d6d92b1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\ImGui">
+    <Filter Include="Header Files\ImGui Dependencies">
       <UniqueIdentifier>{37c0905c-6ec3-4188-8d29-b5fcba54b459}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ImGui Dependencies">
+      <UniqueIdentifier>{f0730149-e943-431c-9a4f-0f317d6d92b1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -48,25 +48,28 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ImGui\imgui.cpp">
-      <Filter>Source Files\ImGui</Filter>
+      <Filter>Source Files\ImGui Dependencies</Filter>
     </ClCompile>
     <ClCompile Include="ImGui\imgui_demo.cpp">
-      <Filter>Source Files\ImGui</Filter>
+      <Filter>Source Files\ImGui Dependencies</Filter>
     </ClCompile>
     <ClCompile Include="ImGui\imgui_draw.cpp">
-      <Filter>Source Files\ImGui</Filter>
+      <Filter>Source Files\ImGui Dependencies</Filter>
     </ClCompile>
     <ClCompile Include="ImGui\imgui_impl_dx11.cpp">
-      <Filter>Source Files\ImGui</Filter>
+      <Filter>Source Files\ImGui Dependencies</Filter>
     </ClCompile>
     <ClCompile Include="ImGui\imgui_impl_win32.cpp">
-      <Filter>Source Files\ImGui</Filter>
+      <Filter>Source Files\ImGui Dependencies</Filter>
     </ClCompile>
     <ClCompile Include="ImGui\imgui_tables.cpp">
-      <Filter>Source Files\ImGui</Filter>
+      <Filter>Source Files\ImGui Dependencies</Filter>
     </ClCompile>
     <ClCompile Include="ImGui\imgui_widgets.cpp">
-      <Filter>Source Files\ImGui</Filter>
+      <Filter>Source Files\ImGui Dependencies</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiMenus.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -101,28 +104,31 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ImGui\imconfig.h">
-      <Filter>Header Files\ImGui</Filter>
+      <Filter>Header Files\ImGui Dependencies</Filter>
     </ClInclude>
     <ClInclude Include="ImGui\imgui.h">
-      <Filter>Header Files\ImGui</Filter>
+      <Filter>Header Files\ImGui Dependencies</Filter>
     </ClInclude>
     <ClInclude Include="ImGui\imgui_impl_dx11.h">
-      <Filter>Header Files\ImGui</Filter>
+      <Filter>Header Files\ImGui Dependencies</Filter>
     </ClInclude>
     <ClInclude Include="ImGui\imgui_impl_win32.h">
-      <Filter>Header Files\ImGui</Filter>
+      <Filter>Header Files\ImGui Dependencies</Filter>
     </ClInclude>
     <ClInclude Include="ImGui\imgui_internal.h">
-      <Filter>Header Files\ImGui</Filter>
+      <Filter>Header Files\ImGui Dependencies</Filter>
     </ClInclude>
     <ClInclude Include="ImGui\imstb_rectpack.h">
-      <Filter>Header Files\ImGui</Filter>
+      <Filter>Header Files\ImGui Dependencies</Filter>
     </ClInclude>
     <ClInclude Include="ImGui\imstb_textedit.h">
-      <Filter>Header Files\ImGui</Filter>
+      <Filter>Header Files\ImGui Dependencies</Filter>
     </ClInclude>
     <ClInclude Include="ImGui\imstb_truetype.h">
-      <Filter>Header Files\ImGui</Filter>
+      <Filter>Header Files\ImGui Dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiMenus.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
