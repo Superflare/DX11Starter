@@ -2,7 +2,7 @@
 #include "Input.h"
 using namespace DirectX;
 
-Camera::Camera(DirectX::XMFLOAT3 startPos, DirectX::XMFLOAT4 startRot,
+Camera::Camera(DirectX::XMFLOAT3 startPos, DirectX::XMFLOAT4X4 startRot,
 	float aspect, float fov,
 	float nearClip, float farClip,
 	float movSpeed, float mouseSpeed,
@@ -14,10 +14,7 @@ Camera::Camera(DirectX::XMFLOAT3 startPos, DirectX::XMFLOAT4 startRot,
 	farClip(farClip),
 	movSpeed(movSpeed),
 	mouseSpeed(mouseSpeed),
-	projType(projType),
-	pitch(0.0f),
-	yaw(0.0f),
-	roll(0.0f)
+	projType(projType)
 {
 	transform = Transform(startPos, XMFLOAT3(1.0f, 1.0f, 1.0f), startRot);
 
@@ -49,17 +46,6 @@ void Camera::UpdateProjectionMatrix(float aspectRatio)
 	{
 		// TODO
 	}
-}
-
-// https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_angles_conversion
-// Used to update camera's internal pitch and yaw fields when it is rotated from outside of Update()
-void Camera::SyncRotationWithTransform()
-{
-	XMFLOAT3 pitchYawRoll = transform.GetPitchYawRoll();
-
-	pitch = pitchYawRoll.x;
-	yaw = pitchYawRoll.y;
-	roll = pitchYawRoll.z;
 }
 
 DirectX::XMFLOAT4X4 Camera::GetViewMatrix()
@@ -133,24 +119,24 @@ void Camera::Update(float dt)
 
 	if (input.KeyDown(VK_SHIFT) && input.KeyUp(VK_CONTROL))
 	{
-		movSpeed *= 1.5f;
-		mouseSpeed *= 1.5f;
+		movSpeed *= 2.0f;
+		mouseSpeed *= 2.0f;
 	}
 	else if (input.KeyRelease(VK_SHIFT))
 	{
-		movSpeed /= 1.5f;
-		mouseSpeed /= 1.5f;
+		movSpeed /= 2.0f;
+		mouseSpeed /= 2.0f;
 	}
 
 	if (input.KeyDown(VK_CONTROL) && input.KeyUp(VK_SHIFT))
 	{
-		movSpeed *= 0.5f;
-		mouseSpeed *= 0.5f;
+		movSpeed *= 0.2f;
+		mouseSpeed *= 0.2f;
 	}
 	else if (input.KeyRelease(VK_CONTROL))
 	{
-		movSpeed /= 0.5f;
-		mouseSpeed /= 0.5f;
+		movSpeed /= 0.2f;
+		mouseSpeed /= 0.2f;
 	}
 
 	// WASD for simple movement controls
@@ -189,6 +175,10 @@ void Camera::Update(float dt)
 	{
 		int cursorMovementX = input.GetMouseXDelta();
 		int cursorMovementY = input.GetMouseYDelta();
+
+		float pitch = transform.GetRotationPitchYawRoll().x;
+		float yaw = transform.GetRotationPitchYawRoll().y;
+		float roll = transform.GetRotationPitchYawRoll().z;
 
 		if (cursorMovementY > 0)
 		{

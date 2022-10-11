@@ -36,8 +36,8 @@ Game::Game(HINSTANCE hInstance)
 #endif
 
 	// Initialize the game's camera
-	XMFLOAT4 camStartRot;
-	XMStoreFloat4(&camStartRot, XMQuaternionIdentity());
+	XMFLOAT4X4 camStartRot;
+	XMStoreFloat4x4(&camStartRot, XMMatrixIdentity());
 	camera = std::make_shared<Camera>(XMFLOAT3(0, 0, -5.0f), camStartRot, (float)1280 / 720);
 }
 
@@ -369,11 +369,11 @@ void Game::Update(float deltaTime, float totalTime)
 	{
 		entities[1]->GetTransform()->Rotate(deltaTime);
 		
-		entities[2]->GetTransform()->SetPosition(sin(totalTime) - 0.55f, -0.4f, 0);
+		entities[2]->GetTransform()->SetPosition(XMScalarSin(totalTime) - 0.55f, -0.4f, 0);
 
 		entities[3]->GetTransform()->Rotate(deltaTime);
 
-		entities[4]->GetTransform()->SetScale((sin(totalTime) + 1.0f) / 2.0f);
+		entities[4]->GetTransform()->SetScale((XMScalarSin(totalTime) + 1.0f) / 2.0f);
 	}
 }
 

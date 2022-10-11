@@ -83,8 +83,8 @@ private:
 	float wheelDelta {0};
 
 	// Booleans to denote whether ImGui is capturing input
-	bool keyboardCaptured;
-	bool mouseCaptured;
+	bool keyboardCaptured = false;
+	bool mouseCaptured = false;
 
 	// The window's handle (id) from the OS, so
 	// we can get the cursor's position

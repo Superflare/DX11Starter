@@ -33,7 +33,7 @@ void ImGuiMenus::EditScene(std::shared_ptr<Camera> cam, std::vector<std::shared_
 		{
 			// Transform values
 			XMFLOAT3 pos = cam->GetTransform()->GetPosition();
-			XMFLOAT3 rot = cam->GetTransform()->GetPitchYawRoll();
+			XMFLOAT3 rot = cam->GetTransform()->GetRotationPitchYawRoll();
 
 			if (ImGui::DragFloat3("Position", &pos.x, 0.01f))
 				cam->GetTransform()->SetPosition(pos);
@@ -42,6 +42,15 @@ void ImGuiMenus::EditScene(std::shared_ptr<Camera> cam, std::vector<std::shared_
 			// enough to constantly calculate the euler angles from the current quaternion rotation
 			if (ImGui::DragFloat3("Rotation", &rot.x, 0.01f))
 			{
+				// Clamp the rotation so the camera can't be rotated upside-down
+				if (rot.x > XM_PIDIV2)
+				{
+					rot.x = XM_PIDIV2;
+				}
+				else if (rot.x < -XM_PIDIV2)
+				{
+					rot.x = -XM_PIDIV2;
+				}
 				cam->GetTransform()->SetRotation(rot.x, rot.y, rot.z);
 			}
 
@@ -72,7 +81,7 @@ void ImGuiMenus::EditScene(std::shared_ptr<Camera> cam, std::vector<std::shared_
 					// Transform values
 					Transform* transform = entities[i]->GetTransform();
 					XMFLOAT3 pos = transform->GetPosition();
-					XMFLOAT3 rot = transform->GetPitchYawRoll();
+					XMFLOAT3 rot = transform->GetRotationPitchYawRoll();
 					XMFLOAT3 scale = transform->GetScale();
 
 					if (ImGui::DragFloat3("Position", &pos.x, 0.01f))
