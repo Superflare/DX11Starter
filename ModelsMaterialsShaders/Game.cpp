@@ -85,18 +85,26 @@ void Game::Init()
 	std::shared_ptr<Material> mGreenTint = std::make_shared<Material>(vertexShader, pixelShader, XMFLOAT4(0.5f, 1, 0.5f, 1));
 	std::shared_ptr<Material> mDarkTint = std::make_shared<Material>(vertexShader, pixelShader, XMFLOAT4(0.3f, 0.3f, 0.3f, 1));
 	std::shared_ptr<Material> mNoTint = std::make_shared<Material>(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1));
+	std::shared_ptr<Material> mAnimated = std::make_shared<Material>(vertexShader, animatedPixelShader);
 
 	// Create a list of Game Entities to be rendered to the screen and initialize their starting transforms
 	// Not every mesh used in the game entities is centered at the origin so transformations are relative
 	{
 		// Set up the Game Entity list using the pre-created meshes
-		entities.push_back(std::make_shared<GameEntity>(meshes[0], mNoTint));
+		// Cube
+		entities.push_back(std::make_shared<GameEntity>(meshes[0], mAnimated));
+		// Cylinder
 		entities.push_back(std::make_shared<GameEntity>(meshes[1], mGreenTint));
-		entities.push_back(std::make_shared<GameEntity>(meshes[2], mNoTint));
+		// Helix
+		entities.push_back(std::make_shared<GameEntity>(meshes[2], mDarkTint));
+		// Quad
 		entities.push_back(std::make_shared<GameEntity>(meshes[3], mRedTint));
-		entities.push_back(std::make_shared<GameEntity>(meshes[4], mDarkTint));
+		// Quad Double Sided
+		entities.push_back(std::make_shared<GameEntity>(meshes[4], mAnimated));
+		// Sphere
 		entities.push_back(std::make_shared<GameEntity>(meshes[5], mDarkTint));
-		entities.push_back(std::make_shared<GameEntity>(meshes[6], mGreenTint));
+		// Torus
+		entities.push_back(std::make_shared<GameEntity>(meshes[6], mAnimated));
 
 		PositionGeometry();
 	}
@@ -128,6 +136,9 @@ void Game::LoadShaders()
 
 	pixelShader = std::make_shared<SimplePixelShader>(device, context,
 		FixPath(L"PixelShader.cso").c_str());
+
+	animatedPixelShader = std::make_shared<SimplePixelShader>(device, context,
+		FixPath(L"AnimatedPixelShader.cso").c_str());
 }
 
 
@@ -254,6 +265,10 @@ void Game::Draw(float deltaTime, float totalTime)
 	
 	for (int i = 0; i < entities.size(); i++)
 	{
+		// Animated Pixel Shader needs the totalTime var
+		std::shared_ptr<SimplePixelShader> ps = entities[i]->GetMaterial()->GetPixelShader();
+		ps->SetFloat("totalTime", totalTime);
+
 		entities[i]->Draw(context, camera);
 	}
 
