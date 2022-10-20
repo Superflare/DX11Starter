@@ -83,24 +83,48 @@ void Game::Init()
 	// "Global Illumination"-like scene wide ambient color
 	ambientColor = XMFLOAT3(0.14f, 0.2f, 0.25f);
 
-	// Directional lights
-	dTopRight = {};
-	dTopRight.type = LIGHT_TYPE_DIRECTIONAL;
-	dTopRight.direction = XMFLOAT3(-1, -1, 0);
-	dTopRight.color = XMFLOAT3(0.39f, 0.88f, 0.31f);
-	dTopRight.intensity = 1.0f;
+	// Setting up lights in the scene
+	{
+		// Directional lights
+		Light dTopRight = {};
+		dTopRight.type = LIGHT_TYPE_DIRECTIONAL;
+		dTopRight.direction = XMFLOAT3(-1, -1, 0);
+		dTopRight.color = XMFLOAT3(0.39f, 0.88f, 0.31f);
+		dTopRight.intensity = 1.0f;
 
-	dFrontLeft = {};
-	dFrontLeft.type = LIGHT_TYPE_DIRECTIONAL;
-	dFrontLeft.direction = XMFLOAT3(-0.3f, 0, 1);
-	dFrontLeft.color = XMFLOAT3(0.29f, 0.21f, 0.87f);
-	dFrontLeft.intensity = 1.0f;
+		Light dFrontLeft = {};
+		dFrontLeft.type = LIGHT_TYPE_DIRECTIONAL;
+		dFrontLeft.direction = XMFLOAT3(-0.3f, 0, 1);
+		dFrontLeft.color = XMFLOAT3(0.29f, 0.21f, 0.87f);
+		dFrontLeft.intensity = 1.0f;
 
-	dBackRight = {};
-	dBackRight.type = LIGHT_TYPE_DIRECTIONAL;
-	dBackRight.direction = XMFLOAT3(1, 0, -0.5f);
-	dBackRight.color = XMFLOAT3(0.92f, 0.53f, 0.12f);
-	dBackRight.intensity = 1.0f;
+		Light dBackRight = {};
+		dBackRight.type = LIGHT_TYPE_DIRECTIONAL;
+		dBackRight.direction = XMFLOAT3(1, 0, -0.5f);
+		dBackRight.color = XMFLOAT3(0.92f, 0.53f, 0.12f);
+		dBackRight.intensity = 1.0f;
+
+		// Point lights
+		Light pLeftAbove = {};
+		pLeftAbove.type = LIGHT_TYPE_POINT;
+		pLeftAbove.position = XMFLOAT3(-6.0f, 0.5f, -1.5f);
+		pLeftAbove.color = XMFLOAT3(1, 1, 1);
+		pLeftAbove.intensity = 1.0f;
+		pLeftAbove.range = 10.0f;
+
+		Light pRightAbove = {};
+		pRightAbove.type = LIGHT_TYPE_POINT;
+		pRightAbove.position = XMFLOAT3(6.0f, 3.0f, 0);
+		pRightAbove.color = XMFLOAT3(1, 1, 1);
+		pRightAbove.intensity = 1.0f;
+		pRightAbove.range = 7.0f;
+
+		lights.push_back(dTopRight);
+		lights.push_back(dFrontLeft);
+		lights.push_back(dBackRight);
+		lights.push_back(pLeftAbove);
+		lights.push_back(pRightAbove);
+	}
 
 	// Create the materials used in the game
 	std::shared_ptr<Material> mRedTint = std::make_shared<Material>(vertexShader, pixelShader, XMFLOAT4(1, 0.3f, 0.3f, 1));
@@ -257,7 +281,7 @@ void Game::Update(float deltaTime, float totalTime)
 
 	UpdateUI(deltaTime);
 	ImGuiMenus::WindowStats(windowWidth, windowHeight);
-	ImGuiMenus::EditScene(camera, entities);
+	ImGuiMenus::EditScene(camera, entities, &lights, &ambientColor);
 
 	// Update the camera
 	if (camera != 0)
@@ -291,9 +315,7 @@ void Game::Draw(float deltaTime, float totalTime)
 		std::shared_ptr<SimplePixelShader> ps = entities[i]->GetMaterial()->GetPixelShader();
 		ps->SetFloat("totalTime", totalTime);
 		ps->SetFloat3("ambientColor", ambientColor);
-		ps->SetData("directionalLight1", &dTopRight, sizeof(Light));
-		ps->SetData("directionalLight2", &dFrontLeft, sizeof(Light));
-		ps->SetData("directionalLight3", &dBackRight, sizeof(Light));
+		ps->SetData("lights", &lights[0], (int)lights.size() * sizeof(Light));
 
 		entities[i]->Draw(context, camera);
 	}

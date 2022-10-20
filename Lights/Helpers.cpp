@@ -107,3 +107,21 @@ DirectX::XMFLOAT3 Rad2DegFromVector(DirectX::XMFLOAT3 radV)
 {
 	return DirectX::XMFLOAT3(Rad2Deg(radV.x), Rad2Deg(radV.y), Rad2Deg(radV.z));
 }
+
+const char* LightTypeToString(int type)
+{
+	switch(type)
+	{
+		case 0:
+			return "Directional";
+
+		case 1:
+			return "Point";
+
+		case 2:
+			return "Spot";
+
+		default:
+			return "Unknown";
+	}
+}

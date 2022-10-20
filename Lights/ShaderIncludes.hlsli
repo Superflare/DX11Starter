@@ -52,7 +52,7 @@ struct VertexToPixel
 	float3 worldPosition	: POSITION;
 };
 
-float3 DirToLight(Light light) { return normalize(-light.direction); }
+
 float3 Diffuse(float3 dirToLight, float3 normal) { return saturate(dot(normal, dirToLight)); }
 float3 Specular(Light light, float3 normal, float3 view, float exponent)
 {
@@ -64,16 +64,41 @@ float3 Specular(Light light, float3 normal, float3 view, float exponent)
 
 	return float3(0, 0, 0);
 }
-float3 ColorFromLight(Light light, float3 normal, float3 view, float3 surfaceColor, float roughness)
+float Attenuate(Light light, float3 worldPos)
 {
-	float3 dirToLight = DirToLight(light);
-
-	float3 diffuse = Diffuse(dirToLight, normal);
-
+	float dist = distance(light.position, worldPos);
+	float att = saturate(1.0f - (dist * dist / (light.range * light.range)));
+	return att * att;
+}
+float3 ColorFromLight(Light light, float3 normal, float3 worldPos, float3 view, float3 surfaceColor, float roughness)
+{
 	float specExponent = (1.0f - roughness) * MAX_SPECULAR_EXPONENT;
-	float3 specular = Specular( light, normal, view, specExponent);
 
-	return (diffuse * light.color * surfaceColor) + (specular * light.color);
+	switch(light.type)
+	{
+		case LIGHT_TYPE_DIRECTIONAL:
+		{
+			float3 dirToLight = normalize(-light.direction);
+			
+			float3 diffuse = Diffuse(dirToLight, normal);
+			float3 specular = Specular(light, normal, view, specExponent);
+
+			return (diffuse * light.color * surfaceColor) + (specular * light.color);
+		}
+
+		case LIGHT_TYPE_POINT:
+		{
+			float3 dirToLight = normalize(light.position - worldPos);
+
+			float3 diffuse = Diffuse(dirToLight, normal);
+			float3 specular = Specular(light, normal, view, specExponent);
+
+			return ((diffuse * light.color * surfaceColor) + (specular * light.color)) * Attenuate(light, worldPos);
+		}
+			
+		default:
+			return float3(0, 0, 0);
+	}
 }
 
 #endif

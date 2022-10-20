@@ -1,13 +1,13 @@
 #include "ShaderIncludes.hlsli"
 
+#define NUM_LIGHTS 5
+
 cbuffer ExternalData : register(b0)
 {
 	float4 colorTint;
 	float roughness;
 	float3 cameraPosition;
-	Light directionalLight1;
-	Light directionalLight2;
-	Light directionalLight3;
+	Light lights[NUM_LIGHTS];
 	float3 ambientColor;
 }
 
@@ -26,10 +26,12 @@ float4 main(VertexToPixel input) : SV_TARGET
 	input.normal = normalize(input.normal);
 	float3 view = normalize(cameraPosition - input.worldPosition);
 	
-	float3 finalColor = ColorFromLight(directionalLight1, input.normal, view, colorTint, roughness) + 
-						ColorFromLight(directionalLight2, input.normal, view, colorTint, roughness) +
-						ColorFromLight(directionalLight3, input.normal, view, colorTint, roughness) +
-						(ambientColor * colorTint);
+	float3 finalColor = ambientColor * colorTint.xyz;
+
+	for (int i = 0; i < NUM_LIGHTS; i++)
+	{
+		finalColor += ColorFromLight(lights[i], input.normal, input.worldPosition, view, colorTint.xyz, roughness);
+	}
 	
 	return float4(finalColor, 1);
 }

@@ -153,7 +153,7 @@ void Camera::Update(float dt)
 			// Clamp the rotation so the farthest down the camera can look is straight down
 			if (pitch > Deg2Rad(90))
 			{
-				pitch = Deg2Rad(89.9);
+				pitch = Deg2Rad(89.9f);
 			}
 
 			transform.SetRotation(pitch, yaw, roll);
@@ -165,7 +165,7 @@ void Camera::Update(float dt)
 			// Clamp the rotation so the farthest up the camera can look is straight up
 			if (pitch < Deg2Rad(-90))
 			{
-				pitch = Deg2Rad(-89.9);
+				pitch = Deg2Rad(-89.9f);
 			}
 
 			transform.SetRotation(pitch, yaw, roll);

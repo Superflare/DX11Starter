@@ -11,3 +11,4 @@ float Deg2Rad(float deg);
 DirectX::XMFLOAT3 Deg2RadFromVector(DirectX::XMFLOAT3 degV);
 float Rad2Deg(float rad);
 DirectX::XMFLOAT3 Rad2DegFromVector(DirectX::XMFLOAT3 radV);
+const char* LightTypeToString(int type);
