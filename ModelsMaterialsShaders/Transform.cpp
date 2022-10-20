@@ -1,3 +1,4 @@
+#include <cmath>
 #include "Transform.h"
 using namespace DirectX;
 
@@ -180,10 +181,26 @@ void Transform::UpdatePitchYawRoll()
 		XMVECTOR from(XMVectorSet(rightVector.y, forwardVector.x, 0.0f, 0.0f));
 		XMVECTOR to(XMVectorSet(upVector.y, forwardVector.z, 0.0f, 0.0f));
 		XMVECTOR result(XMVectorATan2(from, to));
-
+		
 		pitchYawRoll.z = XMVectorGetX(result);
 		pitchYawRoll.y = XMVectorGetY(result);
 
+		//float sy = sqrt(rightVector.x * rightVector.x + rightVector.y * rightVector.y);
+		//bool singular = sy < 0.000001f;
+		//
+		//if (!singular)
+		//{
+		//	pitchYawRoll.x = atan2(upVector.z, forwardVector.z);
+		//	pitchYawRoll.y = atan2(-rightVector.z, sy);
+		//	pitchYawRoll.z = atan2(rightVector.y, rightVector.x);
+		//}
+		//else
+		//{
+		//	pitchYawRoll.x = atan2(-forwardVector.y, upVector.y);
+		//	pitchYawRoll.y = atan2(-rightVector.z, sy);
+		//	pitchYawRoll.z = 0;
+		//}
+		
 		rotationChanged = false;
 	}
 }
@@ -268,6 +285,10 @@ void Transform::Rotate(float pitch, float yaw, float roll)
 	XMVECTOR combinedQuaternion = XMQuaternionMultiply(newQuaternion, XMQuaternionRotationMatrix(GetRotationMatrix()));
 
 	SetRotation(combinedQuaternion);
+
+	pitchYawRoll.x += pitch;
+	pitchYawRoll.y += yaw;
+	pitchYawRoll.z += roll;
 
 	transformChanged = true;
 	rotationChanged = true;

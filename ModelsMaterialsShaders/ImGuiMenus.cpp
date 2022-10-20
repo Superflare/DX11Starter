@@ -88,10 +88,19 @@ void ImGuiMenus::EditScene(std::shared_ptr<Camera> cam, std::vector<std::shared_
 					if (ImGui::DragFloat3("Position", &pos.x, 0.01f))
 						transform->SetPosition(pos);
 
-					// Rotation will need to be changed to using euler angles and floating point numbers aren't precise
-					// enough to constantly calculate the euler angles from the current quaternion rotation
 					if (ImGui::DragFloat3("Rotation (Degrees)", &rot.x, 0.6f))
+					{
+						// Clamp the rotation so the calculations of the euler angles work properly
+						if (rot.x > 90.0f)
+						{
+							rot.x = 89.9f;
+						}
+						else if (rot.x < -90.0f)
+						{
+							rot.x = -89.9f;
+						}
 						transform->SetRotation(Deg2RadFromVector(rot));
+					}
 
 					if (ImGui::DragFloat3("Scale", &scale.x, 0.01f))
 						transform->SetScale(scale);
