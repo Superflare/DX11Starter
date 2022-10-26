@@ -86,44 +86,44 @@ void Game::Init()
 	// Setting up lights in the scene
 	{
 		// Directional lights
-		Light dTopRight = {};
-		dTopRight.type = LIGHT_TYPE_DIRECTIONAL;
-		dTopRight.direction = XMFLOAT3(-1, -1, 0);
-		dTopRight.color = XMFLOAT3(0.9f, 0.4f, 0.1f);
-		dTopRight.intensity = 2.68f;
+		Light ldTopRight = {};
+		ldTopRight.type = LIGHT_TYPE_DIRECTIONAL;
+		ldTopRight.direction = XMFLOAT3(-1, -1, 0);
+		ldTopRight.color = XMFLOAT3(0.9f, 0.4f, 0.1f);
+		ldTopRight.intensity = 2.68f;
 
-		Light dFrontLeft = {};
-		dFrontLeft.type = LIGHT_TYPE_DIRECTIONAL;
-		dFrontLeft.direction = XMFLOAT3(-0.3f, 0, 1);
-		dFrontLeft.color = XMFLOAT3(0.76f, 0, 0.97f);
-		dFrontLeft.intensity = 0.78f;
+		Light ldFrontLeft = {};
+		ldFrontLeft.type = LIGHT_TYPE_DIRECTIONAL;
+		ldFrontLeft.direction = XMFLOAT3(-0.3f, 0, 1);
+		ldFrontLeft.color = XMFLOAT3(0.76f, 0, 0.97f);
+		ldFrontLeft.intensity = 0.78f;
 
-		Light dBackRight = {};
-		dBackRight.type = LIGHT_TYPE_DIRECTIONAL;
-		dBackRight.direction = XMFLOAT3(1, 0, -0.5f);
-		dBackRight.color = XMFLOAT3(0.12f, 0.55f, 0.84f);
-		dBackRight.intensity = 2.7f;
+		Light ldBackRight = {};
+		ldBackRight.type = LIGHT_TYPE_DIRECTIONAL;
+		ldBackRight.direction = XMFLOAT3(1, 0, -0.5f);
+		ldBackRight.color = XMFLOAT3(0.12f, 0.55f, 0.84f);
+		ldBackRight.intensity = 2.7f;
 
 		// Point lights
-		Light pLeftAbove = {};
-		pLeftAbove.type = LIGHT_TYPE_POINT;
-		pLeftAbove.position = XMFLOAT3(-6.0f, 0.5f, -1.5f);
-		pLeftAbove.color = XMFLOAT3(0.12f, 0.55f, 0.84f);
-		pLeftAbove.intensity = 4.7f;
-		pLeftAbove.range = 10.0f;
+		Light lpLeftAbove = {};
+		lpLeftAbove.type = LIGHT_TYPE_POINT;
+		lpLeftAbove.position = XMFLOAT3(-6.0f, 0.5f, -1.5f);
+		lpLeftAbove.color = XMFLOAT3(0.12f, 0.55f, 0.84f);
+		lpLeftAbove.intensity = 4.7f;
+		lpLeftAbove.range = 10.0f;
 
-		Light pRightAbove = {};
-		pRightAbove.type = LIGHT_TYPE_POINT;
-		pRightAbove.position = XMFLOAT3(6.0f, 3.0f, 0);
-		pRightAbove.color = XMFLOAT3(1, 1, 1);
-		pRightAbove.intensity = 2.0f;
-		pRightAbove.range = 7.0f;
+		Light lpRightAbove = {};
+		lpRightAbove.type = LIGHT_TYPE_POINT;
+		lpRightAbove.position = XMFLOAT3(6.0f, 3.0f, 0);
+		lpRightAbove.color = XMFLOAT3(1, 1, 1);
+		lpRightAbove.intensity = 2.0f;
+		lpRightAbove.range = 7.0f;
 
-		lights.push_back(dTopRight);
-		lights.push_back(dFrontLeft);
-		lights.push_back(dBackRight);
-		lights.push_back(pLeftAbove);
-		lights.push_back(pRightAbove);
+		lights.push_back(ldTopRight);
+		lights.push_back(ldFrontLeft);
+		lights.push_back(ldBackRight);
+		lights.push_back(lpLeftAbove);
+		lights.push_back(lpRightAbove);
 	}
 
 	// Loading textures
@@ -156,12 +156,17 @@ void Game::Init()
 
 	// Create the materials used in the game
 	std::shared_ptr<Material> mRainbowDamascus = std::make_shared<Material>(vertexShader, pixelShader, XMFLOAT4(.5f, .5f, .5f, 1), 0.1f);
+	mRainbowDamascus->SetName("Rainbow Damascus");
 	mRainbowDamascus->AddTextureSrv("SurfaceTexture", srvRainbowDamascus);
 	mRainbowDamascus->AddSampler("BasicSampler", texSampler);
-	std::shared_ptr<Material> mDragonSkin = std::make_shared<Material>(vertexShader, pixelShader, XMFLOAT4(0.9f, 0.9f, 0.9f, 1), 1);
+	std::shared_ptr<Material> mDragonSkin = std::make_shared<Material>(vertexShader, pixelShader, XMFLOAT4(0.9f, 0.9f, 0.9f, 1), 0.8);
+	mDragonSkin->SetName("Dragon Skin");
 	mDragonSkin->AddTextureSrv("SurfaceTexture", srvDragonSkin);
 	mDragonSkin->AddSampler("BasicSampler", texSampler);
 	std::shared_ptr<Material> mAnimated = std::make_shared<Material>(vertexShader, animatedPixelShader);
+
+	materials.push_back(mRainbowDamascus);
+	materials.push_back(mDragonSkin);
 
 	// Create a list of Game Entities to be rendered to the screen and initialize their starting transforms
 	// Not every mesh used in the game entities is centered at the origin so transformations are relative
@@ -311,7 +316,7 @@ void Game::Update(float deltaTime, float totalTime)
 
 	UpdateUI(deltaTime);
 	ImGuiMenus::WindowStats(windowWidth, windowHeight);
-	ImGuiMenus::EditScene(camera, entities, &lights, &ambientColor);
+	ImGuiMenus::EditScene(camera, entities, materials, &lights, &ambientColor);
 
 	// Update the camera
 	if (camera != 0)

@@ -12,8 +12,13 @@
 namespace ImGuiMenus
 {
 	void WindowStats(int windowWidth, int windowHeight);
-	void EditScene(std::shared_ptr<Camera> cam, std::vector<std::shared_ptr<GameEntity>> entities,
-		std::vector<Light>* lights, DirectX::XMFLOAT3* ambientColor);
+	void EditScene(
+		std::shared_ptr<Camera> cam,
+		std::vector<std::shared_ptr<GameEntity>> entities,
+		std::vector<std::shared_ptr<Material>> materials,
+		std::vector<Light>* lights,
+		DirectX::XMFLOAT3* ambientColor
+	);
 
 	static bool showUiDemoWindow = false;
 }

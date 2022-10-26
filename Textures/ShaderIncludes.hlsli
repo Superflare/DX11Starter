@@ -73,9 +73,11 @@ float Attenuate(Light light, float3 worldPos)
 	float att = saturate(1.0f - (dist * dist / (light.range * light.range)));
 	return att * att;
 }
+
 float3 ColorFromLight(Light light, float3 normal, float3 worldPos, float3 view, float3 surfaceColor, float roughness)
 {
-	float specExponent = (1.0f - roughness) * MAX_SPECULAR_EXPONENT;
+	float specPercent = 1.0f - roughness;
+	float specExponent = specPercent * MAX_SPECULAR_EXPONENT;
 
 	switch(light.type)
 	{
@@ -84,7 +86,7 @@ float3 ColorFromLight(Light light, float3 normal, float3 worldPos, float3 view, 
 			float3 dirToLight = normalize(-light.direction);
 			
 			float3 diffuse = Diffuse(dirToLight, normal);
-			float3 specular = Specular(light, normal, view, specExponent);
+			float3 specular = Specular(light, normal, view, specExponent) * specPercent;
 			float3 lightColor = (diffuse * light.color * surfaceColor) + (specular * light.color);
 
 			return lightColor * light.intensity;
@@ -95,14 +97,15 @@ float3 ColorFromLight(Light light, float3 normal, float3 worldPos, float3 view, 
 			float3 dirToLight = normalize(light.position - worldPos);
 
 			float3 diffuse = Diffuse(dirToLight, normal);
-			float3 specular = Specular(light, normal, view, specExponent);
+			float3 specular = Specular(light, normal, view, specExponent) * specPercent;
 			float3 lightColor = ((diffuse * light.color * surfaceColor) + (specular * light.color)) * Attenuate(light, worldPos);
 
 			return lightColor * light.intensity;
 		}
 			
+		// TODO: Spotlight
 		default:
-			return float3(0, 0, 0);
+			return float3(0.f, 0.f, 0.f);
 	}
 }
 

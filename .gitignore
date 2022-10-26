@@ -6,6 +6,7 @@
 # Repo-specific files
 Submissions/
 *.zip
+**/packages/
 
 # User-specific files
 *.rsuser

@@ -24,8 +24,13 @@ void ImGuiMenus::WindowStats(int windowWidth, int windowHeight)
 	ImGui::End();
 }
 
-void ImGuiMenus::EditScene(std::shared_ptr<Camera> cam, std::vector<std::shared_ptr<GameEntity>> entities,
-	std::vector<Light>* lights, DirectX::XMFLOAT3* ambientColor)
+void ImGuiMenus::EditScene(
+	std::shared_ptr<Camera> cam,
+	std::vector<std::shared_ptr<GameEntity>> entities,
+	std::vector<std::shared_ptr<Material>> materials,
+	std::vector<Light>* lights,
+	DirectX::XMFLOAT3* ambientColor
+	)
 {
 	ImGui::Begin("Edit Scene");
 
@@ -121,6 +126,55 @@ void ImGuiMenus::EditScene(std::shared_ptr<Camera> cam, std::vector<std::shared_
 			ImGui::EndTabItem();
 		}
 
+		if (ImGui::BeginTabItem("Materials"))
+		{
+			ImGui::Spacing();
+
+			for (int i = 0; i < materials.size(); i++)
+			{
+				ImGui::PushID(i);
+				if (ImGui::TreeNode("Material Node", materials[i]->GetName() == "" ? "Material %d" : materials[i]->GetName(), i))
+				{
+					XMFLOAT4 colorTint = materials[i]->GetColorTint();
+					float roughness = materials[i]->GetRoughness();
+					float texScale = materials[i]->GetTextureScale();
+					XMFLOAT2 texOffset = materials[i]->GetTextureOffset();
+
+					// Color Tint
+					if (ImGui::ColorPicker3("Color Tint", &colorTint.x))
+					{
+						materials[i]->SetColorTint(colorTint);
+					}
+
+					ImGui::Spacing();
+
+					// Roughness
+					if (ImGui::DragFloat("Roughness", &roughness, 0.005f, 0, 1))
+					{
+						materials[i]->SetRoughness(roughness);
+					}
+
+					// Texture Scale
+					if (ImGui::DragFloat("Texture Scale", &texScale, 0.01f, 0.01f, D3D11_FLOAT32_MAX))
+					{
+						materials[i]->SetTextureScale(texScale);
+					}
+
+					// Texture Offset
+					if (ImGui::DragFloat2("Texture Offset", &texOffset.x, 0.01))
+					{
+						materials[i]->SetTextureOffset(texOffset);
+					}
+
+					ImGui::TreePop();
+				}
+
+				ImGui::PopID();
+			}
+
+			ImGui::EndTabItem();
+		}
+
 		if (ImGui::BeginTabItem("Lights"))
 		{
 			ImGui::Spacing();
@@ -168,7 +222,7 @@ void ImGuiMenus::EditScene(std::shared_ptr<Camera> cam, std::vector<std::shared_
 							(*lights)[i].position = position;
 						}
 
-						if (ImGui::DragFloat("Range", &range, 0.01f, 0, ImGuiSliderFlags_ClampOnInput))
+						if (ImGui::DragFloat("Range", &range, 0.01f, 0, D3D11_FLOAT32_MAX))
 						{
 							(*lights)[i].range = range;
 						}
@@ -181,7 +235,7 @@ void ImGuiMenus::EditScene(std::shared_ptr<Camera> cam, std::vector<std::shared_
 						}
 					}
 
-					if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0, ImGuiSliderFlags_ClampOnInput))
+					if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0, D3D11_FLOAT32_MAX))
 					{
 						(*lights)[i].intensity = intensity;
 					}

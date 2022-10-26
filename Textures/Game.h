@@ -59,6 +59,7 @@ private:
 	// Game objects
 	std::vector<std::shared_ptr<Mesh>> meshes;
 	std::vector<std::shared_ptr<GameEntity>> entities;
+	std::vector<std::shared_ptr<Material>> materials;
 	std::shared_ptr<Camera> camera;
 	std::vector<Light> lights;
 };
