@@ -33,6 +33,7 @@ private:
 	// Initialization helper methods - feel free to customize, combine, remove, etc.
 	void LoadShaders();
 	void CreateGeometry();
+	void LoadTextures();
 
 	// Update helper methods
 	void UpdateUI(float dt);
@@ -51,13 +52,15 @@ private:
 	std::shared_ptr<SimplePixelShader> animatedPixelShader;
 
 	// Textures, SRVs, and Sampler States
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvDragonSkin;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvDragonSkinNormal;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvDragonSkinRough;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvRainbowDamascus;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvRainbowDamascusNormal;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvRainbowDamascusRough;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvRainbowDamascusMetallic;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvDragonSkin[4];
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvRainbowDamascus[4];
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvBronze[4];
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvCobblestone[4];
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvFloor[4];
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvPaint[4];
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvRough[4];
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvScratched[4];
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvWood[4];
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvDefaultNormalMap;
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> texSampler;
 

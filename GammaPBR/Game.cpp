@@ -69,9 +69,9 @@ void Game::Init()
 {
 	// Helper methods for loading shaders, creating some basic
 	// geometry to draw and some simple camera matrices.
-	//  - You'll be expanding and/or replacing these later
 	LoadShaders();
 	CreateGeometry();
+	LoadTextures();
 
 	// Initialize ImGui itself & platform/renderer backends
 	IMGUI_CHECKVERSION();
@@ -123,81 +123,6 @@ void Game::Init()
 		lights.push_back(lpRightAbove);
 	}
 
-	// Loading textures
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/albedo_DragonSkin.png").c_str(),
-		nullptr,
-		srvDragonSkin.GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/normal_DragonSkin.png").c_str(),
-		nullptr,
-		srvDragonSkinNormal.GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/roughness_DragonSkin.png").c_str(),
-		nullptr,
-		srvDragonSkinRough.GetAddressOf()
-	);
-
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/albedo_RainbowDamascus.png").c_str(),
-		nullptr,
-		srvRainbowDamascus.GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/normal_RainbowDamascus.png").c_str(),
-		nullptr,
-		srvRainbowDamascusNormal.GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/roughness_RainbowDamascus.png").c_str(),
-		nullptr,
-		srvRainbowDamascusRough.GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/metallic_RainbowDamascus.png").c_str(),
-		nullptr,
-		srvRainbowDamascusMetallic.GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/flat_normals.png").c_str(),
-		nullptr,
-		srvDefaultNormalMap.GetAddressOf()
-	);
-
-	// Create Skybox
-	skybox = std::make_shared<Sky>(
-		meshes[0],
-		FixPath(L"../../Assets/Textures/right.png").c_str(),
-		FixPath(L"../../Assets/Textures/left.png").c_str(),
-		FixPath(L"../../Assets/Textures/up.png").c_str(),
-		FixPath(L"../../Assets/Textures/down.png").c_str(),
-		FixPath(L"../../Assets/Textures/front.png").c_str(),
-		FixPath(L"../../Assets/Textures/back.png").c_str(),
-		FixPath(L"SkyVertexShader.cso").c_str(),
-		FixPath(L"SkyPixelShader.cso").c_str(),
-		texSampler,
-		device,
-		context
-	);
-
 	// Define and create the Sampler State
 	D3D11_SAMPLER_DESC samplerDesc = {};
 	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -210,28 +135,68 @@ void Game::Init()
 	device->CreateSamplerState(&samplerDesc, texSampler.GetAddressOf());
 
 	// Create the materials used in the game
-	std::shared_ptr<Material> mRainbowDamascus = std::make_shared<Material>(vertexShader, pixelShader, XMFLOAT4(1, 1, 1, 1), 0.1f);
-	mRainbowDamascus->SetName("Rainbow Damascus");
-	mRainbowDamascus->SetAlbedo(srvRainbowDamascus);
-	mRainbowDamascus->SetNormal(srvRainbowDamascusNormal);
-	mRainbowDamascus->SetRoughness(srvRainbowDamascusRough);
-	mRainbowDamascus->SetMetallic(srvRainbowDamascusMetallic);
+	// Rainbow Damascus
+	std::shared_ptr<Material> mRainbowDamascus = std::make_shared<Material>("Rainbow Damascus", vertexShader, pixelShader);
+	mRainbowDamascus->SetAllPbrTextures(srvRainbowDamascus);
 	mRainbowDamascus->AddSampler("BasicSampler", texSampler);
-	std::shared_ptr<Material> mDragonSkin = std::make_shared<Material>(vertexShader, pixelShader, XMFLOAT4(0.9f, 0.9f, 0.9f, 1), 0.6);
-	mDragonSkin->SetName("Dragon Skin");
-	mDragonSkin->SetAlbedo(srvDragonSkin);
-	mDragonSkin->SetNormal(srvDragonSkinNormal);
-	mDragonSkin->SetRoughness(srvDragonSkinRough);
+	// Dragon Skin
+	std::shared_ptr<Material> mDragonSkin = std::make_shared<Material>("Dragon Skin", vertexShader, pixelShader);
+	mDragonSkin->SetAllPbrTextures(srvDragonSkin);
 	mDragonSkin->AddSampler("BasicSampler", texSampler);
-	std::shared_ptr<Material> mAnimated = std::make_shared<Material>(vertexShader, animatedPixelShader);
+	// Bronze
+	std::shared_ptr<Material> mBronze = std::make_shared<Material>("Bronze", vertexShader, pixelShader);
+	mBronze->SetAllPbrTextures(srvBronze);
+	mBronze->AddSampler("BasicSampler", texSampler);
+	// Cobblestone
+	std::shared_ptr<Material> mCobblestone = std::make_shared<Material>("Cobblestone", vertexShader, pixelShader);
+	mCobblestone->SetAllPbrTextures(srvCobblestone);
+	mCobblestone->AddSampler("BasicSampler", texSampler);
+	// Floor
+	std::shared_ptr<Material> mFloor = std::make_shared<Material>("Floor", vertexShader, pixelShader);
+	mFloor->SetAllPbrTextures(srvFloor);
+	mFloor->AddSampler("BasicSampler", texSampler);
+	// Paint
+	std::shared_ptr<Material> mPaint = std::make_shared<Material>("Paint", vertexShader, pixelShader);
+	mPaint->SetAllPbrTextures(srvPaint);
+	mPaint->AddSampler("BasicSampler", texSampler);
+	// Rough
+	std::shared_ptr<Material> mRough = std::make_shared<Material>("Rough", vertexShader, pixelShader);
+	mRough->SetAllPbrTextures(srvRough);
+	mRough->AddSampler("BasicSampler", texSampler);
+	// Scratched
+	std::shared_ptr<Material> mScratched = std::make_shared<Material>("Scratched", vertexShader, pixelShader);
+	mScratched->SetAllPbrTextures(srvScratched);
+	mScratched->AddSampler("BasicSampler", texSampler);
+	// Wood
+	std::shared_ptr<Material> mWood = std::make_shared<Material>("Wood", vertexShader, pixelShader);
+	mWood->SetAllPbrTextures(srvWood);
+	mWood->AddSampler("BasicSampler", texSampler);
+
+	// Custom material with animated pixel shader
+	//std::shared_ptr<Material> mAnimated = std::make_shared<Material>("Animated", vertexShader, animatedPixelShader);
 
 	materials.push_back(mRainbowDamascus);
 	materials.push_back(mDragonSkin);
+	materials.push_back(mBronze);
+	materials.push_back(mCobblestone);
+	materials.push_back(mFloor);
+	materials.push_back(mPaint);
+	materials.push_back(mRough);
+	materials.push_back(mScratched);
+	materials.push_back(mWood);
 
 	// Create a list of Game Entities to be rendered to the screen and initialize their starting transforms
 	// Not every mesh used in the game entities is centered at the origin so transformations are relative
 	{
 		// Set up the Game Entity list using the pre-created meshes
+		// PBR comparison entities
+		entities.push_back(std::make_shared<GameEntity>(meshes[5], mCobblestone));
+		entities.push_back(std::make_shared<GameEntity>(meshes[5], mFloor));
+		entities.push_back(std::make_shared<GameEntity>(meshes[5], mPaint));
+		entities.push_back(std::make_shared<GameEntity>(meshes[5], mScratched));
+		entities.push_back(std::make_shared<GameEntity>(meshes[5], mBronze));
+		entities.push_back(std::make_shared<GameEntity>(meshes[5], mRough));
+		entities.push_back(std::make_shared<GameEntity>(meshes[5], mWood));
 		// Cube
 		entities.push_back(std::make_shared<GameEntity>(meshes[0], mDragonSkin));
 		// Cylinder
@@ -298,6 +263,297 @@ void Game::CreateGeometry()
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/torus.obj").c_str(), device, context));
 }
 
+void Game::LoadTextures()
+{
+	// Bronze
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/bronze_albedo.png").c_str(),
+		nullptr,
+		srvBronze[0].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/bronze_normal.png").c_str(),
+		nullptr,
+		srvBronze[1].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/bronze_roughness.png").c_str(),
+		nullptr,
+		srvBronze[2].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/bronze_metallic.png").c_str(),
+		nullptr,
+		srvBronze[3].GetAddressOf()
+	);
+
+	// Cobblestone
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/cobblestone_albedo.png").c_str(),
+		nullptr,
+		srvCobblestone[0].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/cobblestone_normal.png").c_str(),
+		nullptr,
+		srvCobblestone[1].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/cobblestone_roughness.png").c_str(),
+		nullptr,
+		srvCobblestone[2].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/cobblestone_metallic.png").c_str(),
+		nullptr,
+		srvCobblestone[3].GetAddressOf()
+	);
+
+	// Floor
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/floor_albedo.png").c_str(),
+		nullptr,
+		srvFloor[0].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/floor_normal.png").c_str(),
+		nullptr,
+		srvFloor[1].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/floor_roughness.png").c_str(),
+		nullptr,
+		srvFloor[2].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/floor_metallic.png").c_str(),
+		nullptr,
+		srvFloor[3].GetAddressOf()
+	);
+
+	// Paint
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/paint_albedo.png").c_str(),
+		nullptr,
+		srvPaint[0].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/paint_normal.png").c_str(),
+		nullptr,
+		srvPaint[1].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/paint_roughness.png").c_str(),
+		nullptr,
+		srvPaint[2].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/paint_metallic.png").c_str(),
+		nullptr,
+		srvPaint[3].GetAddressOf()
+	);
+
+	// Rough
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/rough_albedo.png").c_str(),
+		nullptr,
+		srvRough[0].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/rough_normal.png").c_str(),
+		nullptr,
+		srvRough[1].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/rough_roughness.png").c_str(),
+		nullptr,
+		srvRough[2].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/rough_metallic.png").c_str(),
+		nullptr,
+		srvRough[3].GetAddressOf()
+	);
+
+	// Scratched
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/scratched_albedo.png").c_str(),
+		nullptr,
+		srvScratched[0].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/scratched_normal.png").c_str(),
+		nullptr,
+		srvScratched[1].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/scratched_roughness.png").c_str(),
+		nullptr,
+		srvScratched[2].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/scratched_metallic.png").c_str(),
+		nullptr,
+		srvScratched[3].GetAddressOf()
+	);
+
+	// Wood
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/wood_albedo.png").c_str(),
+		nullptr,
+		srvWood[0].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/wood_normal.png").c_str(),
+		nullptr,
+		srvWood[1].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/wood_roughness.png").c_str(),
+		nullptr,
+		srvWood[2].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/wood_metallic.png").c_str(),
+		nullptr,
+		srvWood[3].GetAddressOf()
+	);
+
+	// Dragon Skin
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/dragonskin_albedo.png").c_str(),
+		nullptr,
+		srvDragonSkin[0].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/dragonskin_normal.png").c_str(),
+		nullptr,
+		srvDragonSkin[1].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/dragonskin_roughness.png").c_str(),
+		nullptr,
+		srvDragonSkin[2].GetAddressOf()
+	);
+
+	// Rainbow Damascus
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/rainbowdamascus_albedo.png").c_str(),
+		nullptr,
+		srvRainbowDamascus[0].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/rainbowdamascus_normal.png").c_str(),
+		nullptr,
+		srvRainbowDamascus[1].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/rainbowdamascus_roughness.png").c_str(),
+		nullptr,
+		srvRainbowDamascus[2].GetAddressOf()
+	);
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/rainbowdamascus_metallic.png").c_str(),
+		nullptr,
+		srvRainbowDamascus[3].GetAddressOf()
+	);
+
+	// Default normal map
+	/*CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/flat_normals.png").c_str(),
+		nullptr,
+		srvDefaultNormalMap.GetAddressOf()
+	);*/
+
+	// Create Skybox
+	skybox = std::make_shared<Sky>(
+		meshes[0],
+		FixPath(L"../../Assets/Textures/right.png").c_str(),
+		FixPath(L"../../Assets/Textures/left.png").c_str(),
+		FixPath(L"../../Assets/Textures/up.png").c_str(),
+		FixPath(L"../../Assets/Textures/down.png").c_str(),
+		FixPath(L"../../Assets/Textures/front.png").c_str(),
+		FixPath(L"../../Assets/Textures/back.png").c_str(),
+		FixPath(L"SkyVertexShader.cso").c_str(),
+		FixPath(L"SkyPixelShader.cso").c_str(),
+		texSampler,
+		device,
+		context
+		);
+}
+
 void Game::UpdateUI(float dt)
 {
 	// Get a reference to our custom input manager
@@ -335,12 +591,19 @@ void Game::UpdateUI(float dt)
 
 void Game::PositionGeometry()
 {
+	// Layout each entity in a horizontal line
 	for (int i = 0; i < entities.size(); i++)
 	{
 		float lerpBegin = -10.0f;
 		float lerpEnd = 10.0f;
-		float lerpPos = lerpBegin + (i / (float)entities.size()) * (lerpEnd - lerpBegin);
+		float lerpPos = lerpBegin + ((i % 7) / ((float)entities.size() / 2.0f)) * (lerpEnd - lerpBegin);
 		entities[i]->GetTransform()->SetPosition(lerpPos, 0, 0);
+	}
+
+	// Move my custom game entities behind the starting camera
+	for (int i = 7; i < 14; i++)
+	{
+		entities[i]->GetTransform()->MoveAbsolute(0, 0, -20);
 	}
 }
 

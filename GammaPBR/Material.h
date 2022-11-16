@@ -9,6 +9,7 @@ class Material
 {
 public:
 	Material(
+		const char* name,
 		std::shared_ptr<SimpleVertexShader> vxShader,
 		std::shared_ptr<SimplePixelShader> pxShader,
 		DirectX::XMFLOAT4 colorTint = DirectX::XMFLOAT4(1, 1, 1, 1),
@@ -40,6 +41,7 @@ public:
 	void SetNormal(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv) { textureSrvs.insert_or_assign("NormalMap", srv); }
 	void SetRoughness(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv);
 	void SetMetallic(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srv);
+	void SetAllPbrTextures(Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textures[4]);
 	void AddSampler(std::string shaderName, Microsoft::WRL::ComPtr<ID3D11SamplerState> sampler) { textureSamplers.insert({shaderName, sampler}); }
 
 	void Prepare();
