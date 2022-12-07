@@ -34,13 +34,17 @@ private:
 	void LoadShaders();
 	void CreateGeometry();
 	void LoadTextures();
-	void SetupShadows();
+	void SetupShadows(int resolution);
+	void SetupLights();
+	void CreateMaterials();
+	void CreateEntities();
 
 	// Update helper methods
 	void UpdateUI(float dt);
 
 	void PositionGeometry();
 	void UpdateGeometry();
+	void RenderShadowMaps();
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
@@ -69,10 +73,17 @@ private:
 	// Shadow Map fields
 	D3D11_DEPTH_STENCIL_VIEW_DESC shadowMapDsvDesc;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> dsvShadowMap;
-	D3D11_TEXTURE2D_DESC shadowMapTextureDesc;
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> texShadowMap;
-	D3D11_SHADER_RESOURCE_VIEW_DESC shadowMapSrvDesc;
-	std::vector<Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>> srvShadowMaps;
+	std::vector<Microsoft::WRL::ComPtr<ID3D11Texture2D>> texShadowMaps;
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> texShadowMapArray;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvShadowMapArray;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvShadowMap;
+	Microsoft::WRL::ComPtr<ID3D11SamplerState> shadowMapSampler;
+	Microsoft::WRL::ComPtr<ID3D11RasterizerState> shadowMapRasterizer;
+	int shadowMapResolution;
+	int numLightsCastingShadows;
+	std::vector<int> prevLightShadowSettings;
+	std::vector<DirectX::XMFLOAT4X4> lightViewMatrices;
+	std::vector<DirectX::XMFLOAT4X4> lightProjMatrices;
 
 	// Game objects
 	std::vector<std::shared_ptr<Mesh>> meshes;

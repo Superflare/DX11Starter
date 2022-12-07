@@ -151,31 +151,27 @@ void ImGuiMenus::EditScene(
 
 					// Roughness
 					if (roughness == -1)
-					{
 						ImGui::BeginDisabled();
-					}
+					
 					if (ImGui::DragFloat("Roughness", &roughness, 0.005f, 0, 1))
 					{
 						materials[i]->SetRoughness(roughness);
 					}
+
 					if (roughness == -1)
-					{
 						ImGui::EndDisabled();
-					}
 
 					// Metallic
 					if (metallic == -1)
-					{
 						ImGui::BeginDisabled();
-					}
+
 					if (ImGui::DragFloat("Metallic", &metallic, 0.005f, 0, 1))
 					{
 						materials[i]->SetMetallic(metallic);
 					}
+
 					if (metallic == -1)
-					{
 						ImGui::EndDisabled();
-					}
 
 					// Texture Scale
 					if (ImGui::DragFloat("Texture Scale", &texScale, 0.01f, 0.01f, D3D11_FLOAT32_MAX))
@@ -211,10 +207,12 @@ void ImGuiMenus::EditScene(
 
 					XMFLOAT3 color = (*lights)[i].color;
 					XMFLOAT3 direction = (*lights)[i].direction;
+					XMStoreFloat3(&direction, XMVector3Normalize(XMLoadFloat3(&direction)));
 					XMFLOAT3 position = (*lights)[i].position;
 					float range = (*lights)[i].range;
 					float intensity = (*lights)[i].intensity;
 					float spotFalloff = (*lights)[i].spotFalloff;
+					bool castsShadows = (bool)(*lights)[i].castsShadows;
 
 					ImGui::Spacing();
 					if (ImGui::ColorPicker3("Color", &color.x, ImGuiColorEditFlags_PickerHueWheel))
@@ -223,14 +221,18 @@ void ImGuiMenus::EditScene(
 					}
 					ImGui::Spacing();
 
-					if ((*lights)[i].type == LIGHT_TYPE_DIRECTIONAL)
+					if (castsShadows)
+						ImGui::BeginDisabled();
+
+					if ((*lights)[i].type == LIGHT_TYPE_DIRECTIONAL || LIGHT_TYPE_SPOT)
 					{
 						if (ImGui::DragFloat3("Direction", &direction.x, 0.01f))
 						{
 							XMStoreFloat3(&(*lights)[i].direction, XMVector3Normalize(XMVectorSet(direction.x, direction.y, direction.z, 0)));
 						}
 					}
-					else if ((*lights)[i].type == LIGHT_TYPE_POINT)
+					
+					if ((*lights)[i].type == LIGHT_TYPE_POINT || LIGHT_TYPE_SPOT)
 					{
 						if (ImGui::DragFloat3("Position", &position.x, 0.01f))
 						{
@@ -242,7 +244,8 @@ void ImGuiMenus::EditScene(
 							(*lights)[i].range = range;
 						}
 					}
-					else if ((*lights)[i].type == LIGHT_TYPE_POINT)
+
+					if ((*lights)[i].type == LIGHT_TYPE_SPOT)
 					{
 						if (ImGui::DragFloat("Spot Falloff", &spotFalloff, 0.01f))
 						{
@@ -253,6 +256,14 @@ void ImGuiMenus::EditScene(
 					if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0, D3D11_FLOAT32_MAX))
 					{
 						(*lights)[i].intensity = intensity;
+					}
+
+					if (castsShadows)
+						ImGui::EndDisabled();
+
+					if (ImGui::Checkbox("Casts Shadows?", &castsShadows))
+					{
+						(*lights)[i].castsShadows = castsShadows;
 					}
 
 					ImGui::TreePop();

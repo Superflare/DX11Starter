@@ -5,6 +5,7 @@
 #define LIGHT_TYPE_POINT		1
 #define LIGHT_TYPE_SPOT			2
 #define MAX_SPECULAR_EXPONENT	256.0f
+#define NUM_LIGHTS_CASTING_SHADOWS 2
 
 // PBR CONSTANTS ===================
 
@@ -67,6 +68,7 @@ struct VertexToPixel
 	float3 normal			: NORMAL;
 	float3 tangent			: TANGENT;
 	float3 worldPosition	: POSITION;
+	float4 shadowPositions[NUM_LIGHTS_CASTING_SHADOWS]	: SHADOW_POSITION;
 };
 
 struct VertexToPixelSky
@@ -228,7 +230,6 @@ float3 ColorFromLight(Light light, float3 normal, float3 worldPos, float3 view, 
 			return total;
 		}
 			
-		// TODO: Spotlight
 		case LIGHT_TYPE_SPOT:
 		{
 			float3 dirToLight = normalize(light.position - worldPos);

@@ -6,8 +6,9 @@ cbuffer ExternalData : register(b0)
 	matrix worldInvTranspose;
 	matrix view;
 	matrix proj;
+	matrix lightViews[NUM_LIGHTS_CASTING_SHADOWS];
+	matrix lightProjs[NUM_LIGHTS_CASTING_SHADOWS];
 }
-
 
 // --------------------------------------------------------
 // The entry point (main method) for our vertex shader
@@ -31,6 +32,12 @@ VertexToPixel main( VertexShaderInput input )
 	//   a perspective projection matrix, which we'll get to in the future).
 	matrix wvp = mul(proj, mul(view, world));
 	output.screenPosition = mul(wvp, float4(input.localPosition, 1.0f));
+	
+	for (int i = 0; i < NUM_LIGHTS_CASTING_SHADOWS; i++)
+	{
+		matrix lightWvp = mul(lightProjs[i], mul(lightViews[i], world));
+		output.shadowPositions[i] = mul(lightWvp, float4(input.localPosition, 1.0f));
+	}
 
 	// Pass the uv value through 
 	// - The values will be interpolated per-pixel by the rasterizer
