@@ -1,6 +1,6 @@
 #include "ShaderIncludes.hlsli"
 
-#define NUM_LIGHTS 5
+#define NUM_LIGHTS 6
 
 cbuffer ExternalData : register(b0)
 {
@@ -13,13 +13,13 @@ cbuffer ExternalData : register(b0)
 	float2 uvOffset;
 }
 
-Texture2D Albedo			: register(t0);
-Texture2D NormalMap			: register(t1);
-Texture2D RoughnessMap		: register(t2);
-Texture2D MetallicMap		: register(t3);
-SamplerState BasicSampler	: register(s0);
-Texture2DArray<float4> ShadowMaps	: register(t5);
-Texture2D ShadowMap			: register(t4);
+Texture2D Albedo					: register(t0);
+Texture2D NormalMap					: register(t1);
+Texture2D RoughnessMap				: register(t2);
+Texture2D MetallicMap				: register(t3);
+Texture2DArray<float4> ShadowMaps	: register(t4);
+
+SamplerState BasicSampler				: register(s0);
 SamplerComparisonState ShadowSampler	: register(s1);
 
 
@@ -46,9 +46,9 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float3 view = normalize(cameraPosition - input.worldPosition);
 	
 	// Calculate distance from each light that casts shadows
-	float lightDepths[NUM_LIGHTS_CASTING_SHADOWS];
-	float2 shadowUVs[NUM_LIGHTS_CASTING_SHADOWS];
-	for (int i = 0; i < NUM_LIGHTS_CASTING_SHADOWS; i++)
+	float lightDepths[MAX_NUM_SHADOW_MAPS];
+	float2 shadowUVs[MAX_NUM_SHADOW_MAPS];
+	for (int i = 0; i < MAX_NUM_SHADOW_MAPS; i++)
 	{
 		// Because shadowPosition is not tagged as SV_POSITION we must do the perspective divide ourselves
 		lightDepths[i] = input.shadowPositions[i].z / input.shadowPositions[i].w;
@@ -76,16 +76,15 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float metallic = metallicFlat;
 	if (metallicFlat == -1)
 		metallic = MetallicMap.Sample(BasicSampler, input.uv).r;
-	// Get depth value of closest surface from each Shadow Map
-	float shadowAmount[NUM_LIGHTS_CASTING_SHADOWS];
-	for (int i = 0; i < NUM_LIGHTS_CASTING_SHADOWS; i++)
+	// Get depth value of closest surface from each Shadow Map, then compare it to the actual depth of this pixel
+	float shadowAmount[MAX_NUM_SHADOW_MAPS];
+	for (int i = 0; i < MAX_NUM_SHADOW_MAPS; i++)
 	{
+		// float3(UVs to sample from, Shadow Map index in the array)
 		float3 sampleAt = float3(shadowUVs[i].x, shadowUVs[i].y, i);
 		shadowAmount[i] = ShadowMaps.SampleCmpLevelZero(ShadowSampler, sampleAt, lightDepths[i]);
 	}
-
-	//return shadowAmount[0].rrrr;
-
+	
 	// Specular color determination ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// Assume albedo texture is actually holding specular color where metalness == 1
 	//
@@ -101,8 +100,38 @@ float4 main(VertexToPixel input) : SV_TARGET
 	int shadowIndex = 0;
 	for (int i = 0; i < NUM_LIGHTS; i++)
 	{
-		finalColor += ColorFromLight(lights[i], input.normal, input.worldPosition, view,  surfaceColor, specularColor, roughness, metallic) * (lights[i].castsShadows ? shadowAmount[shadowIndex] : 1.0f);
-		shadowIndex = lights[i].castsShadows ? shadowIndex + 1: shadowIndex;
+		// Lighting calculations with shadows for point lights are different from every other type of light
+		// Point lights have 6 Shadow Maps to look at while all other lights only have 1
+		switch (lights[i].type)
+		{
+			case LIGHT_TYPE_POINT:
+			{
+				float3 unshadowedColor = ColorFromLight(lights[i], input.normal, input.worldPosition, view, surfaceColor, specularColor, roughness, metallic);
+				float maxDot = 0.0f;
+				int directionIndex = 0;
+				// Find which Shadow Map to sample from by performing a dot product between the direction vector from the light to this pixel
+				// and each of the 6 directions to a cube face
+				// The dot product with the highest value signifies a smaller angle between vectors
+				for (int j = 0; j < 6 && lights[i].castsShadows; j++)
+				{
+					float dotProduct = dot(normalize(input.worldPosition - lights[i].position), cubeFaceDirections[j]);
+					directionIndex = dotProduct > maxDot ? j : directionIndex;
+					maxDot = max(dotProduct, maxDot);
+				}
+				// Use the sample only from the Shadow Map directly influencing this pixel
+				finalColor += unshadowedColor * (lights[i].castsShadows ? shadowAmount[shadowIndex + directionIndex] : 1.0f);
+				shadowIndex = lights[i].castsShadows ? shadowIndex + 6 : shadowIndex;
+				break;
+			}
+
+			default:
+			{
+				// Multiply the unshadowed color by the amount of light that should be able to reach this pixel because of shadows, if this light casts shadows
+				finalColor += ColorFromLight(lights[i], input.normal, input.worldPosition, view, surfaceColor, specularColor, roughness, metallic) * (lights[i].castsShadows ? shadowAmount[shadowIndex] : 1.0f);
+				shadowIndex = lights[i].castsShadows ? shadowIndex + 1 : shadowIndex;
+				break;
+			}
+		}
 	}
 	
 	return float4(LightenToGamma(finalColor), 1);

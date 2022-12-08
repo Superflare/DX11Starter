@@ -18,6 +18,9 @@
     <Filter Include="Source Files\ImGui Dependencies">
       <UniqueIdentifier>{f0730149-e943-431c-9a4f-0f317d6d92b1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\TinyObjLoader">
+      <UniqueIdentifier>{8e3d6ab5-bc97-413a-aadd-2d65d31cce3b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DXCore.cpp">
@@ -147,6 +150,9 @@
     </ClInclude>
     <ClInclude Include="Sky.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TinyObj\tiny_obj_loader.h">
+      <Filter>Header Files\TinyObjLoader</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

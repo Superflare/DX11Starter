@@ -38,7 +38,7 @@ Game::Game(HINSTANCE hInstance)
 	// Initialize the game's camera
 	XMFLOAT4 camStartRot;
 	XMStoreFloat4(&camStartRot, XMQuaternionRotationAxis(XMVectorSet(1,0,0,0), Deg2Rad(30)));
-	camera = std::make_shared<Camera>(XMFLOAT3(-2.0f, 10.0f, -15.0f), camStartRot, (float)1280 / 720);
+	camera = std::make_shared<Camera>(XMFLOAT3(-2.0f, 22.0f, -28.3f), camStartRot, (float)1280 / 720);
 }
 
 // --------------------------------------------------------
@@ -79,7 +79,7 @@ void Game::Init()
 	ImGui_ImplDX11_Init(device.Get(), context.Get());
 	ImGui::StyleColorsDark();
 
-	// Define and create the Sampler State
+	// Define and create the standard Texture Sampler State
 	D3D11_SAMPLER_DESC samplerDesc = {};
 	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -135,13 +135,10 @@ void Game::LoadShaders()
 // --------------------------------------------------------
 void Game::CreateGeometry()
 {
+	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/snowglobe.obj").c_str(), device, context));
+	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/christmas_tree.obj").c_str(), device, context));
 	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cube.obj").c_str(), device, context));
-	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cylinder.obj").c_str(), device, context));
-	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/helix.obj").c_str(), device, context));
-	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/quad.obj").c_str(), device, context));
-	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/quad_double_sided.obj").c_str(), device, context));
-	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/sphere.obj").c_str(), device, context));
-	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/torus.obj").c_str(), device, context));
+	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/snowman.obj").c_str(), device, context));
 }
 
 // Create a list of Game Entities to be rendered to the screen and initialize their starting transforms
@@ -149,162 +146,88 @@ void Game::CreateGeometry()
 void Game::CreateEntities()
 {
 	// Set up the Game Entity list using the pre-created meshes
-	// PBR comparison entities
-	entities.push_back(std::make_shared<GameEntity>(meshes[5], materials[3]));
-	entities.push_back(std::make_shared<GameEntity>(meshes[5], materials[4]));
-	entities.push_back(std::make_shared<GameEntity>(meshes[5], materials[5]));
-	entities.push_back(std::make_shared<GameEntity>(meshes[5], materials[7]));
-	entities.push_back(std::make_shared<GameEntity>(meshes[5], materials[2]));
-	entities.push_back(std::make_shared<GameEntity>(meshes[5], materials[6]));
-	entities.push_back(std::make_shared<GameEntity>(meshes[5], materials[8]));
-	// Cube
-	entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[1]));
-	// Cylinder
-	entities.push_back(std::make_shared<GameEntity>(meshes[1], materials[0]));
-	// Helix
-	entities.push_back(std::make_shared<GameEntity>(meshes[2], materials[1]));
-	// Quad
-	entities.push_back(std::make_shared<GameEntity>(meshes[3], materials[1]));
-	// Quad Double Sided
-	entities.push_back(std::make_shared<GameEntity>(meshes[4], materials[0]));
-	// Sphere
-	entities.push_back(std::make_shared<GameEntity>(meshes[5], materials[0]));
-	// Torus
-	entities.push_back(std::make_shared<GameEntity>(meshes[6], materials[1]));
-
-	// Floor
-	entities.push_back(std::make_shared<GameEntity>(meshes[3], materials[8]));
+	entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[0]));
+	entities.push_back(std::make_shared<GameEntity>(meshes[1], materials[1]));
+	entities.push_back(std::make_shared<GameEntity>(meshes[3], materials[2]));
 
 	PositionGeometry();
 }
 
 void Game::CreateMaterials()
 {
-	// Rainbow Damascus
-	std::shared_ptr<Material> mRainbowDamascus = std::make_shared<Material>("Rainbow Damascus", vertexShader, pixelShader);
-	mRainbowDamascus->SetAllPbrTextures(srvRainbowDamascus);
-	mRainbowDamascus->AddSampler("BasicSampler", texSampler);
-	// Dragon Skin
-	std::shared_ptr<Material> mDragonSkin = std::make_shared<Material>("Dragon Skin", vertexShader, pixelShader);
-	mDragonSkin->SetAllPbrTextures(srvDragonSkin);
-	mDragonSkin->AddSampler("BasicSampler", texSampler);
-	// Bronze
-	std::shared_ptr<Material> mBronze = std::make_shared<Material>("Bronze", vertexShader, pixelShader);
-	mBronze->SetAllPbrTextures(srvBronze);
-	mBronze->AddSampler("BasicSampler", texSampler);
-	// Cobblestone
-	std::shared_ptr<Material> mCobblestone = std::make_shared<Material>("Cobblestone", vertexShader, pixelShader);
-	mCobblestone->SetAllPbrTextures(srvCobblestone);
-	mCobblestone->AddSampler("BasicSampler", texSampler);
-	// Floor
-	std::shared_ptr<Material> mFloor = std::make_shared<Material>("Floor", vertexShader, pixelShader);
-	mFloor->SetAllPbrTextures(srvFloor);
-	mFloor->AddSampler("BasicSampler", texSampler);
-	// Paint
-	std::shared_ptr<Material> mPaint = std::make_shared<Material>("Paint", vertexShader, pixelShader);
-	mPaint->SetAllPbrTextures(srvPaint);
-	mPaint->AddSampler("BasicSampler", texSampler);
-	// Rough
-	std::shared_ptr<Material> mRough = std::make_shared<Material>("Rough", vertexShader, pixelShader);
-	mRough->SetAllPbrTextures(srvRough);
-	mRough->AddSampler("BasicSampler", texSampler);
-	// Scratched
-	std::shared_ptr<Material> mScratched = std::make_shared<Material>("Scratched", vertexShader, pixelShader);
-	mScratched->SetAllPbrTextures(srvScratched);
-	mScratched->AddSampler("BasicSampler", texSampler);
-	// Wood
-	std::shared_ptr<Material> mWood = std::make_shared<Material>("Wood", vertexShader, pixelShader);
-	mWood->SetAllPbrTextures(srvWood);
-	mWood->AddSampler("BasicSampler", texSampler);
+	// Snowglobe
+	std::shared_ptr<Material> mSnowglobe = std::make_shared<Material>("Snowglobe", vertexShader, pixelShader);
+	mSnowglobe->SetAllPbrTextures(srvSnowglobe);
+	mSnowglobe->AddSampler("BasicSampler", texSampler);
 
-	// Custom material with animated pixel shader
-	//std::shared_ptr<Material> mAnimated = std::make_shared<Material>("Animated", vertexShader, animatedPixelShader);
+	// Christmas Tree
+	std::shared_ptr<Material> mChristmasTree = std::make_shared<Material>("Christmas Tree", vertexShader, pixelShader, XMFLOAT4(1.f, 1.f, 1.f, 1.f), 0.9f, 0.f);
+	mChristmasTree->SetAlbedo(srvChristmasTree);
+	mChristmasTree->SetNormal(srvDefaultNormalMap);
+	mChristmasTree->AddSampler("BasicSampler", texSampler);
 
-	materials.push_back(mRainbowDamascus);
-	materials.push_back(mDragonSkin);
-	materials.push_back(mBronze);
-	materials.push_back(mCobblestone);
-	materials.push_back(mFloor);
-	materials.push_back(mPaint);
-	materials.push_back(mRough);
-	materials.push_back(mScratched);
-	materials.push_back(mWood);
+	// Snowman
+	std::shared_ptr<Material> mSnowman = std::make_shared<Material>("Snowman", vertexShader, pixelShader, XMFLOAT4(1.f, 1.f, 1.f, 1.f), 0.9f, 0.f);
+	mSnowman->SetAlbedo(srvSnowman);
+	mSnowman->SetNormal(srvDefaultNormalMap);
+	mSnowman->AddSampler("BasicSampler", texSampler);
+
+	materials.push_back(mSnowglobe);
+	materials.push_back(mChristmasTree);
+	materials.push_back(mSnowman);
 }
 
 void Game::SetupLights()
 {
 	// Directional lights
-	Light ldTopRight = {};
-	ldTopRight.type = LIGHT_TYPE_DIRECTIONAL;
-	ldTopRight.direction = XMFLOAT3(-0.3f, -0.9f, 0.f);
-	ldTopRight.color = XMFLOAT3(0.9f, 0.4f, 0.1f);
-	ldTopRight.intensity = 2.68f;
-	ldTopRight.castsShadows = 1;
-
-	Light ldFrontLeft = {};
-	ldFrontLeft.type = LIGHT_TYPE_DIRECTIONAL;
-	ldFrontLeft.direction = XMFLOAT3(-0.3f, 0, 1);
-	ldFrontLeft.color = XMFLOAT3(0.76f, 0, 0.97f);
-	ldFrontLeft.intensity = 0.78f;
-
-	Light ldBackRight = {};
-	ldBackRight.type = LIGHT_TYPE_DIRECTIONAL;
-	ldBackRight.direction = XMFLOAT3(1, 0, -0.5f);
-	ldBackRight.color = XMFLOAT3(0.12f, 0.55f, 0.84f);
-	ldBackRight.intensity = 2.7f;
+	Light lDirectional = {};
+	lDirectional.type = LIGHT_TYPE_DIRECTIONAL;
+	lDirectional.direction = XMFLOAT3(-0.375f, -0.883f, 0.281f);
+	lDirectional.color = XMFLOAT3(0.828f, 0.936f, 1.0f);
+	lDirectional.intensity = 1.01f;
+	lDirectional.castsShadows = 1;
 
 	// Point lights
-	Light lpLeftAbove = {};
-	lpLeftAbove.type = LIGHT_TYPE_POINT;
-	lpLeftAbove.position = XMFLOAT3(-6.0f, 0.5f, -1.5f);
-	lpLeftAbove.color = XMFLOAT3(0.12f, 0.55f, 0.84f);
-	lpLeftAbove.intensity = 4.7f;
-	lpLeftAbove.range = 10.0f;
+	Light lPoint = {};
+	lPoint.type = LIGHT_TYPE_POINT;
+	lPoint.position = XMFLOAT3(1.57f, 6.71f, -2.86f);
+	lPoint.color = XMFLOAT3(1.0f, 0.311f, 0.169f);
+	lPoint.intensity = 2.15f;
+	lPoint.range = 7.62f;
+	lPoint.castsShadows = 1;
 
-	Light lpRightAbove = {};
-	lpRightAbove.type = LIGHT_TYPE_POINT;
-	lpRightAbove.position = XMFLOAT3(6.0f, 3.0f, 0);
-	lpRightAbove.color = XMFLOAT3(1, 1, 1);
-	lpRightAbove.intensity = 2.0f;
-	lpRightAbove.range = 7.0f;
-
-	Light lSpotlight = {};
-	lSpotlight.type = LIGHT_TYPE_SPOT;
-	lSpotlight.direction = XMFLOAT3(0.f, -1.f, 0.f);
-	lSpotlight.position = XMFLOAT3(0.f, 6.f, 0.f);
-	lSpotlight.color = XMFLOAT3(1.f, 1.f, 1.f);
-	lSpotlight.intensity = 3.f;
-	lSpotlight.range = 10.f;
-	lSpotlight.spotFalloff = Deg2Rad(90.f);
-	lSpotlight.castsShadows = 1;
-
-	lights.push_back(ldTopRight);
-	//lights.push_back(ldFrontLeft);
-	//lights.push_back(ldBackRight);
-	//lights.push_back(lpLeftAbove);
-	//lights.push_back(lpRightAbove);
-	lights.push_back(lSpotlight);
+	lights.push_back(lDirectional);
+	lights.push_back(lPoint);
 }
 
 // Creates reusable descriptions for Shadow Map resources
 void Game::SetupShadows(int resolution)
 {
+	// Set class variables
+	shadowMapResolution = resolution;
+	numShadowMaps = 0;
+	prevLightShadowSettings.clear();
+	// Count the number of shadow maps required with the current lighting configuration
+	for (int i = 0; i < lights.size(); i++)
+	{
+		// Point lights require 6 shadow maps (A Texture Cube) while all other lights only require 1
+		if (lights[i].castsShadows == 1)
+			lights[i].type == LIGHT_TYPE_POINT ? numShadowMaps += 6 : numShadowMaps++;
+		
+		// Store the current state's shadow casting settings
+		// When the user changes whether a light casts shadows through the UI, it will be noticeable by comparing the
+		// light's current properties to this vector
+		prevLightShadowSettings.push_back(lights[i].castsShadows);
+	}
+
+	// The Depth Stencil View is always the same for every shadow map
+	// but needs to be recreated each time it wants to render to a new texture, so keep the description in local scope
 	shadowMapDsvDesc = {};
 	shadowMapDsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
 	shadowMapDsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	shadowMapDsvDesc.Texture2D.MipSlice = 0;
 
-	shadowMapResolution = resolution;
-	numLightsCastingShadows = 0;
-	prevLightShadowSettings.clear();
-	for (int i = 0; i < lights.size(); i++)
-	{
-		if (lights[i].castsShadows == 1)
-			numLightsCastingShadows++;
-
-		prevLightShadowSettings.push_back(lights[i].castsShadows);
-	}
-
+	// The description for an individual Texture2D Shadow Map
 	D3D11_TEXTURE2D_DESC shadowMapTextureDesc = {};
 	shadowMapTextureDesc.Width = shadowMapResolution;
 	shadowMapTextureDesc.Height = shadowMapResolution;
@@ -318,11 +241,12 @@ void Game::SetupShadows(int resolution)
 	shadowMapTextureDesc.CPUAccessFlags = 0;
 	shadowMapTextureDesc.MiscFlags = 0;
 
-	D3D11_TEXTURE2D_DESC shadowMapTextureArrayDesc = {};
+	// The description for an array of Shadow Maps
+	shadowMapTextureArrayDesc = {};
 	shadowMapTextureArrayDesc.Width = shadowMapResolution;
 	shadowMapTextureArrayDesc.Height = shadowMapResolution;
 	shadowMapTextureArrayDesc.MipLevels = 1;
-	shadowMapTextureArrayDesc.ArraySize = numLightsCastingShadows;
+	shadowMapTextureArrayDesc.ArraySize = numShadowMaps;
 	shadowMapTextureArrayDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 	shadowMapTextureArrayDesc.SampleDesc.Count = 1;
 	shadowMapTextureArrayDesc.SampleDesc.Quality = 0;
@@ -331,16 +255,16 @@ void Game::SetupShadows(int resolution)
 	shadowMapTextureArrayDesc.CPUAccessFlags = 0;
 	shadowMapTextureArrayDesc.MiscFlags = 0;
 
-	D3D11_SHADER_RESOURCE_VIEW_DESC shadowMapSrvDesc = {};
+	// The description for the Shader Resource View that will hold the Shadow Map array
+	shadowMapSrvDesc = {};
 	shadowMapSrvDesc.Format = DXGI_FORMAT_R32_FLOAT;
 	shadowMapSrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-	//shadowMapSrvDesc.Texture2D.MipLevels = 1;
-	//shadowMapSrvDesc.Texture2D.MostDetailedMip = 0;
-	shadowMapSrvDesc.Texture2DArray.ArraySize = numLightsCastingShadows;
+	shadowMapSrvDesc.Texture2DArray.ArraySize = numShadowMaps;
 	shadowMapSrvDesc.Texture2DArray.MipLevels = 1;
 	shadowMapSrvDesc.Texture2DArray.MostDetailedMip = 0;
 	shadowMapSrvDesc.Texture2DArray.FirstArraySlice = 0;
 
+	// Shadow Maps require a specific sampler to specify a comparison function, and the address mode
 	D3D11_SAMPLER_DESC shadowSamplerDesc = {};
 	shadowSamplerDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
 	shadowSamplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS;
@@ -351,8 +275,10 @@ void Game::SetupShadows(int resolution)
 	shadowSamplerDesc.BorderColor[1] = 1.0f;
 	shadowSamplerDesc.BorderColor[2] = 1.0f;
 	shadowSamplerDesc.BorderColor[3] = 1.0f;
-	device->CreateSamplerState(&shadowSamplerDesc, shadowMapSampler.GetAddressOf());
+	device->CreateSamplerState(&shadowSamplerDesc, shadowMapSampler.ReleaseAndGetAddressOf());
 
+	// Shadow Maps require a specific rasterizer to fix some common issues that arise from using Shadow Maps
+	// (i.e. Noise and Self-Shadowing) 
 	D3D11_RASTERIZER_DESC shadowRasterizerDesc = {};
 	shadowRasterizerDesc.FillMode = D3D11_FILL_SOLID;
 	shadowRasterizerDesc.CullMode = D3D11_CULL_BACK;
@@ -360,8 +286,9 @@ void Game::SetupShadows(int resolution)
 	shadowRasterizerDesc.DepthBias = 1000;
 	shadowRasterizerDesc.DepthBiasClamp = 0.0f;
 	shadowRasterizerDesc.SlopeScaledDepthBias = 1.0f;
-	device->CreateRasterizerState(&shadowRasterizerDesc, shadowMapRasterizer.GetAddressOf());
+	device->CreateRasterizerState(&shadowRasterizerDesc, shadowMapRasterizer.ReleaseAndGetAddressOf());
 
+	// Create each individual Texture2D that will be used as a depth buffer and turned into a Shadow Map
 	if (texShadowMaps.size() > 0)
 		texShadowMaps.clear();
 
@@ -369,316 +296,86 @@ void Game::SetupShadows(int resolution)
 	{
 		if (lights[i].castsShadows == 1)
 		{
-			Microsoft::WRL::ComPtr<ID3D11Texture2D> texShadowMap;
-			device->CreateTexture2D(&shadowMapTextureDesc, 0, texShadowMap.GetAddressOf());
-
-			if (texShadowMap != 0)
+			// Point lights require a Texture Cube while other lights only need 1 texture
+			int iterations = lights[i].type == LIGHT_TYPE_POINT ? 6 : 1;
+			for (int j = 0; j < iterations; j++)
 			{
-				texShadowMaps.push_back(texShadowMap);
+				Microsoft::WRL::ComPtr<ID3D11Texture2D> texShadowMap;
+				device->CreateTexture2D(&shadowMapTextureDesc, 0, texShadowMap.ReleaseAndGetAddressOf());
+
+				if (texShadowMap != 0)
+				{
+					texShadowMaps.push_back(texShadowMap);
+				}
 			}
 		}
 	}
-
-	device->CreateTexture2D(&shadowMapTextureArrayDesc, 0, texShadowMapArray.ReleaseAndGetAddressOf());
-	for (int i = 0; i < numLightsCastingShadows; i++)
-	{
-		// Calculate the subresource position to copy into
-		unsigned int subresource = D3D11CalcSubresource(0, i, 1);
-
-		// Copy from the individual Shadow Maps to the Shadow Map Array
-		context->CopySubresourceRegion(
-			texShadowMapArray.Get(),
-			subresource,           
-			0, 0, 0,               
-			texShadowMaps[i].Get(),
-			0,                     
-			0
-		);
-	}
-	if (numLightsCastingShadows > 0)
-		device->CreateShaderResourceView(texShadowMapArray.Get(), &shadowMapSrvDesc, srvShadowMapArray.GetAddressOf());
-	//if (texShadowMaps.size() > 0)
-	//	device->CreateShaderResourceView(texShadowMaps[0].Get(), &shadowMapSrvDesc, srvShadowMap.ReleaseAndGetAddressOf());
 }
 
 
 void Game::LoadTextures()
 {
-	// Bronze
+	
+	// Snowglobe
 	CreateWICTextureFromFile(
 		device.Get(),
 		context.Get(),
-		FixPath(L"../../Assets/Textures/bronze_albedo.png").c_str(),
+		FixPath(L"../../Assets/Textures/snowglobe_albedo.png").c_str(),
 		nullptr,
-		srvBronze[0].GetAddressOf()
+		srvSnowglobe[0].GetAddressOf()
 	);
 	CreateWICTextureFromFile(
 		device.Get(),
 		context.Get(),
-		FixPath(L"../../Assets/Textures/bronze_normal.png").c_str(),
+		FixPath(L"../../Assets/Textures/snowglobe_normal.png").c_str(),
 		nullptr,
-		srvBronze[1].GetAddressOf()
+		srvSnowglobe[1].GetAddressOf()
 	);
 	CreateWICTextureFromFile(
 		device.Get(),
 		context.Get(),
-		FixPath(L"../../Assets/Textures/bronze_roughness.png").c_str(),
+		FixPath(L"../../Assets/Textures/snowglobe_roughness.png").c_str(),
 		nullptr,
-		srvBronze[2].GetAddressOf()
+		srvSnowglobe[2].GetAddressOf()
 	);
 	CreateWICTextureFromFile(
 		device.Get(),
 		context.Get(),
-		FixPath(L"../../Assets/Textures/bronze_metallic.png").c_str(),
+		FixPath(L"../../Assets/Textures/snowglobe_metallic.png").c_str(),
 		nullptr,
-		srvBronze[3].GetAddressOf()
-	);
-
-	// Cobblestone
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/cobblestone_albedo.png").c_str(),
-		nullptr,
-		srvCobblestone[0].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/cobblestone_normal.png").c_str(),
-		nullptr,
-		srvCobblestone[1].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/cobblestone_roughness.png").c_str(),
-		nullptr,
-		srvCobblestone[2].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/cobblestone_metallic.png").c_str(),
-		nullptr,
-		srvCobblestone[3].GetAddressOf()
+		srvSnowglobe[3].GetAddressOf()
 	);
 
-	// Floor
+	// Christmas Tree
 	CreateWICTextureFromFile(
 		device.Get(),
 		context.Get(),
-		FixPath(L"../../Assets/Textures/floor_albedo.png").c_str(),
+		FixPath(L"../../Assets/Textures/christmas_tree_albedo.png").c_str(),
 		nullptr,
-		srvFloor[0].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/floor_normal.png").c_str(),
-		nullptr,
-		srvFloor[1].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/floor_roughness.png").c_str(),
-		nullptr,
-		srvFloor[2].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/floor_metallic.png").c_str(),
-		nullptr,
-		srvFloor[3].GetAddressOf()
+		srvChristmasTree.GetAddressOf()
 	);
 
-	// Paint
+	// Snowman
 	CreateWICTextureFromFile(
 		device.Get(),
 		context.Get(),
-		FixPath(L"../../Assets/Textures/paint_albedo.png").c_str(),
+		FixPath(L"../../Assets/Textures/snowman_albedo.png").c_str(),
 		nullptr,
-		srvPaint[0].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/paint_normal.png").c_str(),
-		nullptr,
-		srvPaint[1].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/paint_roughness.png").c_str(),
-		nullptr,
-		srvPaint[2].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/paint_metallic.png").c_str(),
-		nullptr,
-		srvPaint[3].GetAddressOf()
-	);
-
-	// Rough
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/rough_albedo.png").c_str(),
-		nullptr,
-		srvRough[0].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/rough_normal.png").c_str(),
-		nullptr,
-		srvRough[1].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/rough_roughness.png").c_str(),
-		nullptr,
-		srvRough[2].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/rough_metallic.png").c_str(),
-		nullptr,
-		srvRough[3].GetAddressOf()
-	);
-
-	// Scratched
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/scratched_albedo.png").c_str(),
-		nullptr,
-		srvScratched[0].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/scratched_normal.png").c_str(),
-		nullptr,
-		srvScratched[1].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/scratched_roughness.png").c_str(),
-		nullptr,
-		srvScratched[2].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/scratched_metallic.png").c_str(),
-		nullptr,
-		srvScratched[3].GetAddressOf()
-	);
-
-	// Wood
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/wood_albedo.png").c_str(),
-		nullptr,
-		srvWood[0].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/wood_normal.png").c_str(),
-		nullptr,
-		srvWood[1].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/wood_roughness.png").c_str(),
-		nullptr,
-		srvWood[2].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/wood_metallic.png").c_str(),
-		nullptr,
-		srvWood[3].GetAddressOf()
-	);
-
-	// Dragon Skin
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/dragonskin_albedo.png").c_str(),
-		nullptr,
-		srvDragonSkin[0].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/dragonskin_normal.png").c_str(),
-		nullptr,
-		srvDragonSkin[1].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/dragonskin_roughness.png").c_str(),
-		nullptr,
-		srvDragonSkin[2].GetAddressOf()
-	);
-
-	// Rainbow Damascus
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/rainbowdamascus_albedo.png").c_str(),
-		nullptr,
-		srvRainbowDamascus[0].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/rainbowdamascus_normal.png").c_str(),
-		nullptr,
-		srvRainbowDamascus[1].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/rainbowdamascus_roughness.png").c_str(),
-		nullptr,
-		srvRainbowDamascus[2].GetAddressOf()
-	);
-	CreateWICTextureFromFile(
-		device.Get(),
-		context.Get(),
-		FixPath(L"../../Assets/Textures/rainbowdamascus_metallic.png").c_str(),
-		nullptr,
-		srvRainbowDamascus[3].GetAddressOf()
+		srvSnowman.GetAddressOf()
 	);
 
 	// Default normal map
-	/*CreateWICTextureFromFile(
+	CreateWICTextureFromFile(
 		device.Get(),
 		context.Get(),
 		FixPath(L"../../Assets/Textures/flat_normals.png").c_str(),
 		nullptr,
 		srvDefaultNormalMap.GetAddressOf()
-	);*/
+	);
 
 	// Create Skybox
 	skybox = std::make_shared<Sky>(
-		meshes[0],
+		meshes[2],
 		FixPath(L"../../Assets/Textures/right.png").c_str(),
 		FixPath(L"../../Assets/Textures/left.png").c_str(),
 		FixPath(L"../../Assets/Textures/up.png").c_str(),
@@ -730,25 +427,17 @@ void Game::UpdateUI(float dt)
 
 void Game::PositionGeometry()
 {
-	// Layout each entity in a horizontal line
-	for (int i = 0; i < entities.size(); i++)
-	{
-		float lerpBegin = -10.0f;
-		float lerpEnd = 10.0f;
-		float lerpPos = lerpBegin + ((i % 7) / ((float)entities.size() / 2.0f)) * (lerpEnd - lerpBegin);
-		entities[i]->GetTransform()->SetPosition(lerpPos, 0, 0);
-	}
+	std::shared_ptr<GameEntity> snowglobe = entities[0];
 
-	// Move my custom game entities behind the starting camera
-	for (int i = 7; i < 14; i++)
-	{
-		entities[i]->GetTransform()->MoveAbsolute(0, 0, -20);
-	}
+	std::shared_ptr<GameEntity> christmasTree = entities[1];
+	christmasTree->GetTransform()->SetScale(0.08f);
+	christmasTree->GetTransform()->SetPosition(-1.58f, 5.44f, -5.2f);
+	christmasTree->GetTransform()->Rotate(0.f, Deg2Rad(-33.6f), 0.f);
 
-	// Create a large floor out of a plane
-	std::shared_ptr<GameEntity> floor = entities[entities.size() - 1];
-	floor->GetTransform()->MoveRelative(10.f, -1.f, 0.f);
-	floor->GetTransform()->Scale(20.f, 1.f, 20.f);
+	std::shared_ptr<GameEntity> snowman = entities[2];
+	snowman->GetTransform()->SetScale(.5f);
+	snowman->GetTransform()->SetPosition(3.47f, 5.29f, -4.98f);
+	snowman->GetTransform()->Rotate(0.f, Deg2Rad(-88.2f), 0.f);
 }
 
 void Game::UpdateGeometry()
@@ -793,6 +482,7 @@ void Game::Update(float deltaTime, float totalTime)
 	
 	UpdateGeometry();
 
+	// Reset shadows when a light in the scene has started or stopped casting shadows
 	for (int i = 0; i < lights.size(); i++)
 	{
 		if (lights[i].castsShadows != prevLightShadowSettings[i])
@@ -825,18 +515,26 @@ void Game::Draw(float deltaTime, float totalTime)
 	// Render all objects in the scene
 	for (int i = 0; i < entities.size(); i++)
 	{
-		// Animated Pixel Shader needs the totalTime var
 		std::shared_ptr<SimplePixelShader> ps = entities[i]->GetMaterial()->GetPixelShader();
-		ps->SetFloat("totalTime", totalTime);
-		ps->SetData("lights", &lights[0], (int)lights.size() * sizeof(Light));
-		context->PSSetShaderResources(5, (unsigned int)numLightsCastingShadows, srvShadowMapArray.GetAddressOf());
-		//ps->SetShaderResourceView("ShadowMaps", srvShadowMapArray);
-		ps->SetSamplerState("ShadowSampler", shadowMapSampler);
 		std::shared_ptr<SimpleVertexShader> vs = entities[i]->GetMaterial()->GetVertexShader();
+
+		// Animated Pixel Shader needs the totalTime var
+		ps->SetFloat("totalTime", totalTime);
+
+		if (lights.size() > 0)
+		{
+			ps->SetData("lights", &lights[0], (int)lights.size() * sizeof(Light));
+			// Send all of the Shadow Maps to the pixel shader through a Texture2DArray stored in an SRV
+			ps->SetShaderResourceView("ShadowMaps", srvShadowMapArray);
+			ps->SetSamplerState("ShadowSampler", shadowMapSampler);
+		}
+
 		if (lightViewMatrices.size() > 0)
 		{
-			vs->SetData("lightViews", &lightViewMatrices[0], numLightsCastingShadows * sizeof(XMFLOAT4X4));
-			vs->SetData("lightProjs", &lightProjMatrices[0], numLightsCastingShadows * sizeof(XMFLOAT4X4));
+			// The vertex shader needs the view and projection matrices used to create each Shadow Map
+			// so that the pixel shader can interpret the Shadow Maps properly
+			vs->SetData("lightViews", &lightViewMatrices[0], numShadowMaps * sizeof(XMFLOAT4X4));
+			vs->SetData("lightProjs", &lightProjMatrices[0], numShadowMaps * sizeof(XMFLOAT4X4));
 		}
 
 		entities[i]->Draw(context, camera);
@@ -863,10 +561,29 @@ void Game::Draw(float deltaTime, float totalTime)
 	}
 }
 
+// Handle all frame-by-frame shadow map implementation
 void Game::RenderShadowMaps()
 {
 	lightViewMatrices.clear();
 	lightProjMatrices.clear();
+
+	// Set the renderer to the proper settings for only rendering depth buffers
+	context->RSSetState(shadowMapRasterizer.Get());
+	context->PSSetShader(0, 0, 0);
+
+	D3D11_VIEWPORT lightViewport = {};
+	lightViewport.TopLeftX = 0;
+	lightViewport.TopLeftY = 0;
+	lightViewport.Width = (float)shadowMapResolution;
+	lightViewport.Height = (float)shadowMapResolution;
+	lightViewport.MinDepth = 0.0f;
+	lightViewport.MaxDepth = 1.0f;
+	context->RSSetViewports(1, &lightViewport);
+
+	if (numShadowMaps > 0)
+	{
+		device->CreateTexture2D(&shadowMapTextureArrayDesc, 0, texShadowMapArray.ReleaseAndGetAddressOf());
+	}
 
 	// Render scene from the pov of each light that casts shadows, and store the depth buffer as a shadow map
 	int shadowIndex = 0;
@@ -874,128 +591,220 @@ void Game::RenderShadowMaps()
 	{
 		if (lights[i].castsShadows == 1)
 		{
-			// Clear the shadow map depth buffer
-			if (dsvShadowMap != 0)
-				context->ClearDepthStencilView(dsvShadowMap.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
-			device->CreateDepthStencilView(texShadowMaps[shadowIndex].Get(), &shadowMapDsvDesc, dsvShadowMap.ReleaseAndGetAddressOf());
-
-			XMFLOAT4X4 lightView;
-			XMFLOAT4X4 lightProj;
-
-			switch (lights[i].type)
+			// This process is repeated 6 times for point lights
+			int iterations = lights[i].type == LIGHT_TYPE_POINT ? 6 : 1;
+			for (int j = 0; j < iterations; j++)
 			{
-			case LIGHT_TYPE_DIRECTIONAL:
-			{
-				XMVECTOR lightDir = XMVector3Normalize(XMLoadFloat3(&lights[i].direction));
-				XMVECTOR position = -20 * lightDir;
+				XMFLOAT4X4 lightView;
+				XMFLOAT4X4 lightProj;
 
-				XMVECTOR forward = XMVectorSet(0.f, 0.f, 1.f, 1.f);
-				float dot;
-				XMStoreFloat(&dot, XMVector3Dot(forward, lightDir));
-				float angle = acos(dot);
-				XMVECTOR axis = XMVector3Cross(forward, lightDir);
+				// Create the view and projection matrices of the light based on its type
+				switch (lights[i].type)
+				{
+					case LIGHT_TYPE_DIRECTIONAL:
+					{
+						XMVECTOR lightDir = XMVector3Normalize(XMLoadFloat3(&lights[i].direction));
+						// Set the position of the directional light along the direction to the light starting from the world origin
+						// While it makes sense for the light to be far away from the scene (the sun) in order to preserve shadow quality,
+						// this position must be relatively close to the objects that will be mapped during this call
+						XMVECTOR position = -20 * lightDir;
 
-				Transform lightTransform = Transform();
-				lightTransform.SetRotation(XMQuaternionRotationAxis(axis, angle));
-				XMFLOAT3 lookDir = lightTransform.GetForward();
-				XMFLOAT3 upDir = lightTransform.GetUp();
+						// Setup the variables needed to rotate a new Transform object to match the light's direction
+						XMVECTOR forward = XMVectorSet(0.f, 0.f, 1.f, 1.f);
+						float dot;
+						XMStoreFloat(&dot, XMVector3Dot(forward, lightDir));
+						float angle = acos(dot);
+						XMVECTOR axis = XMVector3Cross(forward, lightDir);
 
-				XMStoreFloat4x4(&lightView,
-					XMMatrixLookToLH(
-						position,
-						XMLoadFloat3(&lookDir),
-						XMLoadFloat3(&upDir)
-					)
+						// Use a Transform object to calculate the correct EyeDirection and UpDirection for the view matrix
+						Transform lightTransform = Transform();
+						lightTransform.SetRotation(XMQuaternionRotationAxis(axis, angle));
+						XMFLOAT3 lookDir = lightTransform.GetForward();
+						XMFLOAT3 upDir = lightTransform.GetUp();
+
+						XMStoreFloat4x4(&lightView,
+							XMMatrixLookToLH(
+								position,
+								XMLoadFloat3(&lookDir),
+								XMLoadFloat3(&upDir)
+							)
+						);
+
+						// Use an orthographic projection matrix because directional lights are meant to be
+						// light coming from every possible position along the specified direction
+						XMStoreFloat4x4(&lightProj,
+							XMMatrixOrthographicLH(
+								20,
+								20,
+								1.f,
+								200.f
+							)
+						);
+
+						break;
+					}
+
+					case LIGHT_TYPE_POINT:
+					{
+						// A point light is omnidirectional, so to map objects to a depth buffer in all directions, 6 depth buffers must be used
+						// Because of this, this code is repeated 6 times and each time uses a different axis direction pointing to one of the 6 faces of a cube
+						XMVECTOR lightDir = XMLoadFloat3(&cubeFaceDirections[j]);
+
+						// Setup the variables needed to rotate a new Transform object to match the light's direction
+						XMVECTOR forward = XMVectorSet(0.f, 0.f, 1.f, 1.f);
+						float dot;
+						XMStoreFloat(&dot, XMVector3Dot(forward, lightDir));
+						float angle = acos(dot);
+						XMVECTOR axis;
+						// Make sure the look direction and up direction are calculated correctly
+						// even when the light's direction lines up with the forward vector
+						if (dot != 1.f && dot != -1.f)
+						{
+							axis = XMVector3Cross(forward, lightDir);
+						}
+						else if (dot == 1.f)
+						{
+							axis = forward;
+						}
+						else
+						{
+							axis = XMVectorSet(0.f, 1.f, 0.f, 1.f);
+						}
+
+						// Use a Transform object to calculate the correct EyeDirection and UpDirection for the view matrix
+						Transform lightTransform = Transform();
+						lightTransform.SetRotation(XMQuaternionRotationAxis(axis, angle));
+						XMFLOAT3 lookDir = lightTransform.GetForward();
+						XMFLOAT3 upDir = lightTransform.GetUp();
+
+						XMStoreFloat4x4(&lightView,
+							XMMatrixLookToLH(
+								XMLoadFloat3(&lights[i].position),
+								XMLoadFloat3(&lookDir),
+								XMLoadFloat3(&upDir)
+							)
+						);
+
+						// Each projection matrix used is a frustum from the light's position to the entirety of one of its TextureCube faces
+						// This projection matrix only extends as far as the light's range
+						XMStoreFloat4x4(&lightProj,
+							XMMatrixPerspectiveFovLH(
+								90.f,
+								1.f,
+								0.1f,
+								lights[i].range
+							)
+						);
+
+						break;
+					}
+
+					case LIGHT_TYPE_SPOT:
+					{
+						XMVECTOR lightDir = XMVector3Normalize(XMLoadFloat3(&lights[i].direction));
+
+						// Setup the variables needed to rotate a new Transform object to match the light's direction
+						XMVECTOR forward = XMVectorSet(0.f, 0.f, 1.f, 1.f);
+						float dot;
+						XMStoreFloat(&dot, XMVector3Dot(forward, lightDir));
+						float angle = acos(dot);
+						XMVECTOR axis;
+						// Make sure the look direction and up direction are calculated correctly
+						// even when the light's direction lines up with the forward vector
+						if (dot != 1.f && dot != -1.f)
+						{
+							axis = XMVector3Cross(forward, lightDir);
+						}
+						else if (dot == 1.f)
+						{
+							axis = forward;
+						}
+						else
+						{
+							axis = XMVectorSet(0.f, 0.f, -1.f, 1.f);
+						}
+
+						// Use a Transform object to calculate the correct EyeDirection and UpDirection for the view matrix
+						Transform lightTransform = Transform();
+						lightTransform.SetRotation(XMQuaternionRotationAxis(axis, angle));
+						XMFLOAT3 lookDir = lightTransform.GetForward();
+						XMFLOAT3 upDir = lightTransform.GetUp();
+
+						XMStoreFloat4x4(&lightView,
+							XMMatrixLookToLH(
+								XMLoadFloat3(&lights[i].position),
+								XMLoadFloat3(&lookDir),
+								XMLoadFloat3(&upDir)
+							)
+						);
+
+						// The spotlight is the easier projection matrix to create because its range and frustum match up exactly with its matrix
+						// This matrix also uses an equal aspect ratio of 1
+						XMStoreFloat4x4(&lightProj,
+							XMMatrixPerspectiveFovLH(
+								Rad2Deg(lights[i].spotFalloff),
+								1.f,
+								0.1f,
+								lights[i].range
+							)
+						);
+
+						break;
+					}
+
+					default:
+						XMStoreFloat4x4(&lightView, XMMatrixIdentity());
+						XMStoreFloat4x4(&lightProj, XMMatrixIdentity());
+						break;
+				}
+
+				lightViewMatrices.push_back(lightView);
+				lightProjMatrices.push_back(lightProj);
+
+				// Clear the shadow map depth buffer
+				if (dsvShadowMap != 0)
+					context->ClearDepthStencilView(dsvShadowMap.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+				// Set the Depth Stencil View to render to the next Texture2D in our list
+				device->CreateDepthStencilView(texShadowMaps[shadowIndex].Get(), &shadowMapDsvDesc, dsvShadowMap.ReleaseAndGetAddressOf());
+				context->OMSetRenderTargets(0, 0, dsvShadowMap.Get());
+
+				// Render all of the game entities in the scene to a depth buffer using a custom vertex shader
+				for (int i = 0; i < entities.size(); i++)
+				{
+					shadowMapVertexShader->SetShader();
+					shadowMapVertexShader->SetMatrix4x4("view", lightView);
+					shadowMapVertexShader->SetMatrix4x4("proj", lightProj);
+					shadowMapVertexShader->SetMatrix4x4("world", entities[i]->GetTransform()->GetWorldMatrix());
+					shadowMapVertexShader->CopyAllBufferData();
+					// Use the Mesh's draw method so no extra constant buffers or render settings are set
+					entities[i]->GetMesh()->Draw();
+				}
+
+				// Copy the Texture2D depth buffer that was just rendered into the Texture2DArray that will be sent to the pixel shader
+				// Calculate the subresource position to copy into
+				unsigned int subresource = D3D11CalcSubresource(0, shadowIndex, 1);
+
+				// Copy from the current individual Shadow Map to the Shadow Map Array
+				context->CopySubresourceRegion(
+					texShadowMapArray.Get(),
+					subresource,
+					0, 0, 0,
+					texShadowMaps[shadowIndex].Get(),
+					0,
+					0
 				);
 
-				XMStoreFloat4x4(&lightProj,
-					XMMatrixOrthographicLH(
-						20,
-						20,
-						1.f,
-						200.f
-					)
-				);
-
-				break;
+				// Move on to the next Shadow Map
+				shadowIndex++;
 			}
-
-			case LIGHT_TYPE_POINT:
-			{
-				break;
-			}
-
-			case LIGHT_TYPE_SPOT:
-			{
-				XMVECTOR lightDir = XMVector3Normalize(XMLoadFloat3(&lights[i].direction));
-
-				XMVECTOR forward = XMVectorSet(0.f, 0.f, 1.f, 1.f);
-				float dot;
-				XMStoreFloat(&dot, XMVector3Dot(forward, lightDir));
-				float angle = acos(dot);
-				XMVECTOR axis = XMVector3Cross(forward, lightDir);
-
-				Transform lightTransform = Transform();
-				lightTransform.SetRotation(XMQuaternionRotationAxis(axis, angle));
-				XMFLOAT3 lookDir = lightTransform.GetForward();
-				XMFLOAT3 upDir = lightTransform.GetUp();
-
-				XMStoreFloat4x4(&lightView,
-					XMMatrixLookToLH(
-						XMLoadFloat3(&lights[i].position),
-						XMLoadFloat3(&lookDir),
-						XMLoadFloat3(&upDir)
-					)
-				);
-
-				XMStoreFloat4x4(&lightProj,
-					XMMatrixPerspectiveFovLH(
-						Rad2Deg(lights[i].spotFalloff),
-						1.f,
-						0.1f,
-						lights[i].range
-					)
-				);
-
-				break;
-			}
-
-			default:
-				XMStoreFloat4x4(&lightView, XMMatrixIdentity());
-				XMStoreFloat4x4(&lightProj, XMMatrixIdentity());
-				break;
-			}
-
-			lightViewMatrices.push_back(lightView);
-			lightProjMatrices.push_back(lightProj);
-
-			context->OMSetRenderTargets(0, 0, dsvShadowMap.Get());
-			context->RSSetState(shadowMapRasterizer.Get());
-
-			D3D11_VIEWPORT lightViewport = {};
-			lightViewport.TopLeftX = 0;
-			lightViewport.TopLeftY = 0;
-			lightViewport.Width = (float)shadowMapResolution;
-			lightViewport.Height = (float)shadowMapResolution;
-			lightViewport.MinDepth = 0.0f;
-			lightViewport.MaxDepth = 1.0f;
-			context->RSSetViewports(1, &lightViewport);
-
-			shadowMapVertexShader->SetShader();
-			shadowMapVertexShader->SetMatrix4x4("view", lightView);
-			shadowMapVertexShader->SetMatrix4x4("proj", lightProj);
-			context->PSSetShader(0, 0, 0);
-
-
-			for (int i = 0; i < entities.size(); i++)
-			{
-				shadowMapVertexShader->SetMatrix4x4("world", entities[i]->GetTransform()->GetWorldMatrix());
-				shadowMapVertexShader->CopyAllBufferData();
-				entities[i]->GetMesh()->Draw();
-			}
-
-			shadowIndex++;
 		}
+	}
+
+	// Once all of the Shadow Maps have been rendered, and the texture array is stored with a copy of each,
+	// use the texture array as our Shader Resource
+	if (numShadowMaps > 0)
+	{
+		device->CreateShaderResourceView(texShadowMapArray.Get(), &shadowMapSrvDesc, srvShadowMapArray.ReleaseAndGetAddressOf());
 	}
 	
 	// Reset rendering settings

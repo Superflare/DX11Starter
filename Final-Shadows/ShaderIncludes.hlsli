@@ -5,7 +5,7 @@
 #define LIGHT_TYPE_POINT		1
 #define LIGHT_TYPE_SPOT			2
 #define MAX_SPECULAR_EXPONENT	256.0f
-#define NUM_LIGHTS_CASTING_SHADOWS 2
+#define MAX_NUM_SHADOW_MAPS 15
 
 // PBR CONSTANTS ===================
 
@@ -20,6 +20,16 @@ static const float F0_NON_METAL = 0.04f;
 static const float MIN_ROUGHNESS = 0.0000001f; // 6 zeros after decimal
 // Handy to have this as a constant
 static const float PI = 3.14159265359f;
+
+// The directions toward each face of a TextureCube
+static const float3 cubeFaceDirections[6] = {
+	float3(0.0f, 0.0f, 1.0f),
+	float3(1.0f, 0.0f, 0.0f),
+	float3(0.0f, 0.0f, -1.0f),
+	float3(-1.0f, 0.0f, 0.0f),
+	float3(0.0f, 1.0f, 0.0f),
+	float3(0.0f, -1.0f, 0.0f)
+};
 
 struct Light {
 	int type;						// directional, point, spot
@@ -68,7 +78,7 @@ struct VertexToPixel
 	float3 normal			: NORMAL;
 	float3 tangent			: TANGENT;
 	float3 worldPosition	: POSITION;
-	float4 shadowPositions[NUM_LIGHTS_CASTING_SHADOWS]	: SHADOW_POSITION;
+	float4 shadowPositions[MAX_NUM_SHADOW_MAPS]	: SHADOW_POSITION;
 };
 
 struct VertexToPixelSky
@@ -77,7 +87,6 @@ struct VertexToPixelSky
 	float3 sampleDir	: DIRECTION;
 };
 
-// https://gamedev.stackexchange.com/questions/138511/sampled-texture-renders-dark
 float3 LightenToGamma(float3 color) { return pow(color, 1/2.2f); }
 float3 DarkenToGamma(float3 color) { return pow(color, 2.2f); }
 
@@ -235,6 +244,7 @@ float3 ColorFromLight(Light light, float3 normal, float3 worldPos, float3 view, 
 			float3 dirToLight = normalize(light.position - worldPos);
 			float angleFromLight = acos(dot(normalize(-light.direction), dirToLight));
 
+			// Only calculate the light value if this pixel is within the spotlight's cone
 			if (angleFromLight > light.spotFalloff / 2.0f)
 				return float3(0.f, 0.f, 0.f);
 				

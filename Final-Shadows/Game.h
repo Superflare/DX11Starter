@@ -58,32 +58,40 @@ private:
 	std::shared_ptr<SimpleVertexShader> shadowMapVertexShader;
 
 	// Textures, SRVs, and Sampler States
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvDragonSkin[4];
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvRainbowDamascus[4];
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvBronze[4];
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvCobblestone[4];
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvFloor[4];
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvPaint[4];
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvRough[4];
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvScratched[4];
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvWood[4];
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvSnowglobe[4];
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvChristmasTree;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvSnowman;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvDefaultNormalMap;
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> texSampler;
 
 	// Shadow Map fields
-	D3D11_DEPTH_STENCIL_VIEW_DESC shadowMapDsvDesc;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> dsvShadowMap;
 	std::vector<Microsoft::WRL::ComPtr<ID3D11Texture2D>> texShadowMaps;
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> texShadowMapArray;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvShadowMapArray;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvShadowMap;
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> shadowMapSampler;
 	Microsoft::WRL::ComPtr<ID3D11RasterizerState> shadowMapRasterizer;
-	int shadowMapResolution;
-	int numLightsCastingShadows;
-	std::vector<int> prevLightShadowSettings;
+
+	D3D11_DEPTH_STENCIL_VIEW_DESC shadowMapDsvDesc;
+	D3D11_TEXTURE2D_DESC shadowMapTextureArrayDesc;
+	D3D11_SHADER_RESOURCE_VIEW_DESC shadowMapSrvDesc;
+
 	std::vector<DirectX::XMFLOAT4X4> lightViewMatrices;
 	std::vector<DirectX::XMFLOAT4X4> lightProjMatrices;
+	std::vector<int> prevLightShadowSettings;
+	const std::vector<DirectX::XMFLOAT3> cubeFaceDirections = 
+	{
+		DirectX::XMFLOAT3(0.f, 0.f, 1.f),
+		DirectX::XMFLOAT3(1.f, 0.f, 0.f),
+		DirectX::XMFLOAT3(0.f, 0.f, -1.f),
+		DirectX::XMFLOAT3(-1.f, 0.f, 0.f),
+		DirectX::XMFLOAT3(0.f, 1.f, 0.f),
+		DirectX::XMFLOAT3(0.f, -1.f, 0.f)
+	};
+
+	int shadowMapResolution;
+	int numShadowMaps;
+
 
 	// Game objects
 	std::vector<std::shared_ptr<Mesh>> meshes;

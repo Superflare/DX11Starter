@@ -6,8 +6,8 @@ cbuffer ExternalData : register(b0)
 	matrix worldInvTranspose;
 	matrix view;
 	matrix proj;
-	matrix lightViews[NUM_LIGHTS_CASTING_SHADOWS];
-	matrix lightProjs[NUM_LIGHTS_CASTING_SHADOWS];
+	matrix lightViews[MAX_NUM_SHADOW_MAPS];
+	matrix lightProjs[MAX_NUM_SHADOW_MAPS];
 }
 
 // --------------------------------------------------------
@@ -33,7 +33,9 @@ VertexToPixel main( VertexShaderInput input )
 	matrix wvp = mul(proj, mul(view, world));
 	output.screenPosition = mul(wvp, float4(input.localPosition, 1.0f));
 	
-	for (int i = 0; i < NUM_LIGHTS_CASTING_SHADOWS; i++)
+	// Do an additional position calculation for each Shadow Map being used
+	// using the view and projection matrices specific to the light casting this shadow
+	for (int i = 0; i < MAX_NUM_SHADOW_MAPS; i++)
 	{
 		matrix lightWvp = mul(lightProjs[i], mul(lightViews[i], world));
 		output.shadowPositions[i] = mul(lightWvp, float4(input.localPosition, 1.0f));
