@@ -48,13 +48,6 @@ Game::Game(HINSTANCE hInstance)
 // --------------------------------------------------------
 Game::~Game()
 {
-	// Call delete or delete[] on any objects or arrays you've
-	// created using new or new[] within this class
-	// - Note: this is unnecessary if using smart pointers
-
-	// Call Release() on any Direct3D objects made within this class
-	// - Note: this is unnecessary for D3D objects stored in ComPtrs
-
 	// ImGui clean up
 	ImGui_ImplDX11_Shutdown();
 	ImGui_ImplWin32_Shutdown();
@@ -200,7 +193,9 @@ void Game::SetupLights()
 	lights.push_back(lPoint);
 }
 
+// --------------------------------------------------------
 // Creates reusable descriptions for Shadow Map resources
+// --------------------------------------------------------
 void Game::SetupShadows(int resolution)
 {
 	// Set class variables
@@ -561,7 +556,9 @@ void Game::Draw(float deltaTime, float totalTime)
 	}
 }
 
+// --------------------------------------------------------
 // Handle all frame-by-frame shadow map implementation
+// --------------------------------------------------------
 void Game::RenderShadowMaps()
 {
 	lightViewMatrices.clear();

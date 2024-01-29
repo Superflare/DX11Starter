@@ -3,6 +3,9 @@
 #include "Helpers.h"
 using namespace DirectX;
 
+// ------------------------------------------------------------------
+// Dislpay the program status in a small window
+// ------------------------------------------------------------------
 void ImGuiMenus::WindowStats(int windowWidth, int windowHeight)
 {
 	ImGui::Begin("Window Stats");
@@ -24,6 +27,9 @@ void ImGuiMenus::WindowStats(int windowWidth, int windowHeight)
 	ImGui::End();
 }
 
+// ------------------------------------------------------------------
+// Provide runtime tools to edit the precreated rendered scene
+// ------------------------------------------------------------------
 void ImGuiMenus::EditScene(
 	std::shared_ptr<Camera> cam,
 	std::vector<std::shared_ptr<GameEntity>> entities,
@@ -35,6 +41,7 @@ void ImGuiMenus::EditScene(
 
 	if (ImGui::BeginTabBar("Scene Components"))
 	{
+		// Give camera-specific editing options
 		if (ImGui::BeginTabItem("Cameras"))
 		{
 			ImGui::Spacing();
@@ -77,6 +84,7 @@ void ImGuiMenus::EditScene(
 			ImGui::EndTabItem();
 		}
 
+		// Allow for transformation changes of game entities within the world
 		if (ImGui::BeginTabItem("Entities"))
 		{
 			ImGui::Spacing();
@@ -125,6 +133,7 @@ void ImGuiMenus::EditScene(
 			ImGui::EndTabItem();
 		}
 
+		// Display materials used by entities in the scene and allow for PBR property changes
 		if (ImGui::BeginTabItem("Materials"))
 		{
 			ImGui::Spacing();
@@ -194,6 +203,9 @@ void ImGuiMenus::EditScene(
 			ImGui::EndTabItem();
 		}
 
+		// Display all the lights used in the scene and edit their transforms and light properties
+		// - Note: Lights' transforms can only be edited when "Cast Shadows" is turned off on that light.
+		//         After a transform change, shadows can be re-enabled to work properly again
 		if (ImGui::BeginTabItem("Lights"))
 		{
 			ImGui::Spacing();
@@ -224,6 +236,8 @@ void ImGuiMenus::EditScene(
 					if (castsShadows)
 						ImGui::BeginDisabled();
 
+					// Only display the light properties that will have an effect on the selected light
+					// (i.e. Point lights and spot lights have light falloff that directional lights don't have)
 					if ((*lights)[i].type == LIGHT_TYPE_DIRECTIONAL || LIGHT_TYPE_SPOT)
 					{
 						if (ImGui::DragFloat3("Direction", &direction.x, 0.01f))
