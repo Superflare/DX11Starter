@@ -4,10 +4,12 @@
 #include <d3d11.h>
 #include <string>
 #include <wrl/client.h> // Used for ComPtr - a smart pointer for COM objects
+#include <dxgi1_6.h>
 
 // We can include the correct library files here
 // instead of in Visual Studio settings if we want
 #pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "dxgi.lib")
 
 class DXCore
 {
@@ -36,6 +38,8 @@ public:
 	// Initialization and game-loop related methods
 	HRESULT InitWindow();
 	HRESULT InitDirect3D();
+	void GetHardwareAdapter(IDXGIAdapter1** ppAdapter);
+	void CreateFactory();
 	HRESULT Run();
 	void Quit();
 	virtual void OnResize();
@@ -71,6 +75,7 @@ protected:
 
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> backBufferRTV;
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> depthBufferDSV;
+	Microsoft::WRL::ComPtr<IDXGIFactory2>		   dxgiFactory;	// Used to query the GPU hardware to find the optimal GPU adapter
 
 	// Helper function for allocating a console window
 	void CreateConsoleWindow(int bufferLines, int bufferColumns, int windowLines, int windowColumns);
@@ -90,5 +95,14 @@ private:
 
 	void UpdateTimer();			// Updates the timer for this frame
 	void UpdateTitleBarStats();	// Puts debug info in the title bar
+
+	// Helper utility converts D3D API failures into exceptions.
+	inline void ThrowIfFailed(HRESULT hr)
+	{
+		if (FAILED(hr))
+		{
+			throw std::exception();
+		}
+	}
 };
 

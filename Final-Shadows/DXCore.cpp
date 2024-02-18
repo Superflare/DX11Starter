@@ -6,6 +6,8 @@
 
 #include <WindowsX.h>
 #include <sstream>
+#include <dxgidebug.h>
+#include <dxgi.h>
 
 // Define the static instance variable so our OS-level 
 // message handling function below can talk to our object
@@ -200,23 +202,34 @@ HRESULT DXCore::InitDirect3D()
 	swapDesc.SwapEffect			= DXGI_SWAP_EFFECT_FLIP_DISCARD;
 	swapDesc.Windowed			= true;
 
-	// Result variable for below function calls
-	HRESULT hr = S_OK;
+	// Setup for query
+	CreateFactory();
 
-	// Attempt to initialize Direct3D
-	hr = D3D11CreateDeviceAndSwapChain(
-		0,							// Video adapter (physical GPU) to use, or null for default
-		D3D_DRIVER_TYPE_HARDWARE,	// We want to use the hardware (GPU)
-		0,							// Used when doing software rendering
-		deviceFlags,				// Any special options
-		0,							// Optional array of possible verisons we want as fallbacks
-		0,							// The number of fallbacks in the above param
-		D3D11_SDK_VERSION,			// Current version of the SDK
-		&swapDesc,					// Address of swap chain options
-		swapChain.GetAddressOf(),	// Pointer to our Swap Chain pointer
-		device.GetAddressOf(),		// Pointer to our Device pointer
-		&dxFeatureLevel,			// This will hold the actual feature level the app will use
-		context.GetAddressOf());	// Pointer to our Device Context pointer
+	// Query the computer for the correct high performance GPU adapter to use
+	Microsoft::WRL::ComPtr<IDXGIAdapter1> adapter;
+	GetHardwareAdapter(adapter.GetAddressOf());
+
+	// Result variable for below function calls
+	HRESULT hr = E_FAIL;
+
+	if (adapter)
+	{
+		// Attempt to initialize Direct3D
+		hr = D3D11CreateDeviceAndSwapChain(
+			adapter.Get(),				// Video adapter (physical GPU) to use, or null for default
+			D3D_DRIVER_TYPE_UNKNOWN,	// We let the adapter determine the driver type (GPU)
+			0,							// Used when doing software rendering
+			deviceFlags,				// Any special options
+			0,							// Optional array of possible verisons we want as fallbacks
+			0,							// The number of fallbacks in the above param
+			D3D11_SDK_VERSION,			// Current version of the SDK
+			&swapDesc,					// Address of swap chain options
+			swapChain.GetAddressOf(),	// Pointer to our Swap Chain pointer
+			device.GetAddressOf(),		// Pointer to our Device pointer
+			&dxFeatureLevel,			// This will hold the actual feature level the app will use
+			context.GetAddressOf());	// Pointer to our Device Context pointer
+	}
+
 	if (FAILED(hr)) return hr;
 
 	// Create the Render Target View for the back buffer render target
@@ -285,6 +298,113 @@ HRESULT DXCore::InitDirect3D()
 
 	// Return the "everything is ok" HRESULT value
 	return S_OK;
+}
+
+// Acquires the first available hardware adapter.
+// If no such adapter can be found, *ppAdapter will be set to nullptr.
+// Function pulled from: https://github.com/walbourn/directx-vs-templates/blob/main/d3d11game_win32_dr/DeviceResources.cpp
+void DXCore::GetHardwareAdapter(IDXGIAdapter1** ppAdapter)
+{
+	*ppAdapter = nullptr;
+
+	Microsoft::WRL::ComPtr<IDXGIAdapter1> adapter;
+
+	Microsoft::WRL::ComPtr<IDXGIFactory6> factory6;
+	HRESULT hr = dxgiFactory.As(&factory6);
+	if (SUCCEEDED(hr))
+	{
+		for (UINT adapterIndex = 0;
+
+			SUCCEEDED(factory6->EnumAdapterByGpuPreference(
+				adapterIndex,
+				DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
+				IID_PPV_ARGS(adapter.ReleaseAndGetAddressOf())));
+
+			adapterIndex++)
+		{
+			DXGI_ADAPTER_DESC1 desc;
+			ThrowIfFailed(adapter->GetDesc1(&desc));
+
+			if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+			{
+				// Don't select the Basic Render Driver adapter.
+				continue;
+			}
+
+#if defined(DEBUG) || defined(_DEBUG)
+			wchar_t buff[256] = {};
+			swprintf_s(buff, L"Direct3D Adapter (%u): VID:%04X, PID:%04X - %ls\n", adapterIndex, desc.VendorId, desc.DeviceId, desc.Description);
+			OutputDebugStringW(buff);
+#endif
+
+			break;
+		}
+	}
+
+	if (!adapter)
+	{
+		for (UINT adapterIndex = 0;
+
+			SUCCEEDED(dxgiFactory->EnumAdapters1(
+				adapterIndex,
+				adapter.ReleaseAndGetAddressOf()));
+
+			adapterIndex++)
+		{
+			DXGI_ADAPTER_DESC1 desc;
+			ThrowIfFailed(adapter->GetDesc1(&desc));
+
+			if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+			{
+				// Don't select the Basic Render Driver adapter.
+				continue;
+			}
+
+#if defined(DEBUG) || defined(_DEBUG)
+			wchar_t buff[256] = {};
+			swprintf_s(buff, L"Direct3D Adapter (%u): VID:%04X, PID:%04X - %ls\n", adapterIndex, desc.VendorId, desc.DeviceId, desc.Description);
+			OutputDebugStringW(buff);
+#endif
+
+			break;
+		}
+	}
+
+	*ppAdapter = adapter.Detach();
+}
+
+// Initializes the DxgiFactory for use in determining what GPU adapter can be used by the program
+// Function pulled from: https://github.com/walbourn/directx-vs-templates/blob/main/d3d11game_win32_dr/DeviceResources.cpp
+void DXCore::CreateFactory()
+{
+#if (defined(DEBUG) || defined(_DEBUG)) && (_WIN32_WINNT >= 0x0603 /*_WIN32_WINNT_WINBLUE*/) && !defined(__MINGW32__)
+	bool debugDXGI = false;
+	{
+		Microsoft::WRL::ComPtr<IDXGIInfoQueue> dxgiInfoQueue;
+		if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(dxgiInfoQueue.GetAddressOf()))))
+		{
+			debugDXGI = true;
+
+			ThrowIfFailed(CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));
+
+			dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR, true);
+			dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true);
+
+			DXGI_INFO_QUEUE_MESSAGE_ID hide[] =
+			{
+				80 /* IDXGISwapChain::GetContainingOutput: The swapchain's adapter does not control the output on which the swapchain's window resides. */,
+			};
+			DXGI_INFO_QUEUE_FILTER filter = {};
+			filter.DenyList.NumIDs = static_cast<UINT>(std::size(hide));
+			filter.DenyList.pIDList = hide;
+			dxgiInfoQueue->AddStorageFilterEntries(DXGI_DEBUG_DXGI, &filter);
+		}
+	}
+
+	if (!debugDXGI)
+#endif
+
+		ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(dxgiFactory.ReleaseAndGetAddressOf())));
 }
 
 // --------------------------------------------------------
