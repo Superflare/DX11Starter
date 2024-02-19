@@ -261,6 +261,9 @@ Mesh::Mesh(std::string objFile, Microsoft::WRL::ComPtr<ID3D11Device> device, Mic
 	//auto& materials = reader.GetMaterials();
 
 	// Variables used while reading the file
+	std::vector<XMFLOAT3> positions;// Positions from the file
+	std::vector<XMFLOAT3> normals;	// Normals from the file
+	std::vector<XMFLOAT2> uvs;		// UVs from the file
 	std::vector<Vertex> verts;		// Verts we're assembling
 	std::vector<UINT> indices;		// Indices of these verts
 	int vertCounter = 0;			// Count of vertices
@@ -274,10 +277,14 @@ Mesh::Mesh(std::string objFile, Microsoft::WRL::ComPtr<ID3D11Device> device, Mic
 		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++)
 		{
 			size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
+			bool isQuad = false;
 
 			// Loop over vertices in the face.
 			for (size_t v = 0; v < fv; v++)
 			{
+				if (v == 3)
+					isQuad = true;
+
 				Vertex vertex;
 
 				// access to vertex
@@ -286,9 +293,7 @@ Mesh::Mesh(std::string objFile, Microsoft::WRL::ComPtr<ID3D11Device> device, Mic
 				tinyobj::real_t vy = attributes.vertices[3 * size_t(idx.vertex_index) + 1];
 				tinyobj::real_t vz = attributes.vertices[3 * size_t(idx.vertex_index) + 2];
 
-				vertex.position = XMFLOAT3(vx, vy, -vz);
-				indices.push_back(indexCounter);
-				indexCounter++;
+				positions.push_back(XMFLOAT3(vx, vy, -vz));
 
 				// Check if `normal_index` is zero or positive. negative = no normal data
 				if (idx.normal_index >= 0)
@@ -297,7 +302,7 @@ Mesh::Mesh(std::string objFile, Microsoft::WRL::ComPtr<ID3D11Device> device, Mic
 					tinyobj::real_t ny = attributes.normals[3 * size_t(idx.normal_index) + 1];
 					tinyobj::real_t nz = attributes.normals[3 * size_t(idx.normal_index) + 2];
 
-					vertex.normal = XMFLOAT3(nx, ny, -nz);
+					normals.push_back(XMFLOAT3(nx, ny, -nz));
 				}
 
 				// Check if `texcoord_index` is zero or positive. negative = no texcoord data
@@ -306,17 +311,70 @@ Mesh::Mesh(std::string objFile, Microsoft::WRL::ComPtr<ID3D11Device> device, Mic
 					tinyobj::real_t tx = attributes.texcoords[2 * size_t(idx.texcoord_index) + 0];
 					tinyobj::real_t ty = attributes.texcoords[2 * size_t(idx.texcoord_index) + 1];
 
-					vertex.uv = XMFLOAT2(tx, 1.0f - ty);
+					uvs.push_back(XMFLOAT2(tx, 1.0f - ty));
 				}
 
-				verts.push_back(vertex);
-				vertCounter++;
+				//verts.push_back(vertex);
+				//vertCounter++;
 
 				// Optional: vertex colors
 				// tinyobj::real_t red   = attributes.colors[3*size_t(idx.vertex_index)+0];
 				// tinyobj::real_t green = attributes.colors[3*size_t(idx.vertex_index)+1];
 				// tinyobj::real_t blue  = attributes.colors[3*size_t(idx.vertex_index)+2];
 			}
+			
+			Vertex v1;
+			v1.position = positions[0];
+			v1.normal = normals[0];
+			v1.uv = uvs[0];
+
+			Vertex v2;
+			v2.position = positions[1];
+			v2.normal = normals[1];
+			v2.uv = uvs[1];
+
+			Vertex v3;
+			v3.position = positions[2];
+			v3.normal = normals[2];
+			v3.uv = uvs[2];
+
+			// Add the verts to the vector (flipping the winding order)
+			verts.push_back(v1);
+			verts.push_back(v3);
+			verts.push_back(v2);
+			vertCounter += 3;
+
+			// Add three more indices
+			indices.push_back(indexCounter); indexCounter += 1;
+			indices.push_back(indexCounter); indexCounter += 1;
+			indices.push_back(indexCounter); indexCounter += 1;
+
+			// Was there a 4th face?
+			if (isQuad)
+			{
+				// Make the last vertex
+				Vertex v4;
+				v4.position = positions[3];
+				v4.uv = uvs[3];
+				v4.normal = normals[3];
+
+				// Add a whole triangle (flipping the winding order)
+				verts.push_back(v1);
+				verts.push_back(v4);
+				verts.push_back(v3);
+				vertCounter += 3;
+
+				// Add three more indices
+				indices.push_back(indexCounter); indexCounter += 1;
+				indices.push_back(indexCounter); indexCounter += 1;
+				indices.push_back(indexCounter); indexCounter += 1;
+			}
+
+			// Only store mesh information 1 face at a time
+			positions.clear();
+			normals.clear();
+			uvs.clear();
+
 			index_offset += fv;
 
 			// per-face material
