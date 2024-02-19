@@ -10,7 +10,7 @@
 using namespace DirectX;
 
 Mesh::Mesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount,
-           Microsoft::WRL::ComPtr<ID3D11Device> device, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+           const Microsoft::WRL::ComPtr<ID3D11Device>& device, const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context)
 	:
 	indexCount(indexCount),
 	context(context)
@@ -19,7 +19,7 @@ Mesh::Mesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCo
 	CreateVertexIndexBuffers(vertices, vertexCount, indices, indexCount, device);
 }
 
-Mesh::Mesh(const wchar_t* objFile, Microsoft::WRL::ComPtr<ID3D11Device> device, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+Mesh::Mesh(const wchar_t* objFile, const Microsoft::WRL::ComPtr<ID3D11Device>& device, const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context)
 	:
 	context(context)
 {
@@ -243,7 +243,7 @@ Mesh::Mesh(const wchar_t* objFile, Microsoft::WRL::ComPtr<ID3D11Device> device, 
 }
 
 // Create a mesh by loading it from a OBJ file with the use of tinyobjloader
-Mesh::Mesh(std::string objFile, Microsoft::WRL::ComPtr<ID3D11Device> device, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context)
+Mesh::Mesh(std::string objFile, const Microsoft::WRL::ComPtr<ID3D11Device>& device, const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context)
 	:
 	context(context)
 {
@@ -420,7 +420,7 @@ void Mesh::Draw()
 }
 
 void Mesh::CreateVertexIndexBuffers(Vertex* vertices, int vertexCount, unsigned* indices, int indexCount,
-	Microsoft::WRL::ComPtr<ID3D11Device> device)
+	const Microsoft::WRL::ComPtr<ID3D11Device>& device)
 {
 	// Create a VERTEX BUFFER
 	// - This holds the vertex data of triangles for a single object

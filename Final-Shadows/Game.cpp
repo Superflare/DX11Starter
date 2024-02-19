@@ -128,10 +128,10 @@ void Game::LoadShaders()
 // --------------------------------------------------------
 void Game::CreateGeometry()
 {
-	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/snowglobe.obj").c_str(), device, context));
-	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/christmas_tree.obj").c_str(), device, context));
-	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/cube.obj").c_str(), device, context));
-	meshes.push_back(std::make_shared<Mesh>(FixPath(L"../../Assets/Models/snowman.obj").c_str(), device, context));
+	meshes.push_back(std::make_shared<Mesh>("../../Assets/Models/snowglobe.obj", device, context));
+	meshes.push_back(std::make_shared<Mesh>("../../Assets/Models/christmas_tree.obj", device, context));
+	meshes.push_back(std::make_shared<Mesh>("../../Assets/Models/cube.obj", device, context));
+	meshes.push_back(std::make_shared<Mesh>("../../Assets/Models/snowman.obj", device, context));
 }
 
 // Create a list of Game Entities to be rendered to the screen and initialize their starting transforms
@@ -139,15 +139,20 @@ void Game::CreateGeometry()
 void Game::CreateEntities()
 {
 	// Set up the Game Entity list using the pre-created meshes
-	entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[0]));
-	entities.push_back(std::make_shared<GameEntity>(meshes[1], materials[1]));
-	entities.push_back(std::make_shared<GameEntity>(meshes[3], materials[2]));
+	entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[1]));
+	entities.push_back(std::make_shared<GameEntity>(meshes[1], materials[2]));
+	entities.push_back(std::make_shared<GameEntity>(meshes[3], materials[3]));
 
 	PositionGeometry();
 }
 
 void Game::CreateMaterials()
 {
+	// Default Material
+	std::shared_ptr<Material> mDefault = std::make_shared<Material>("Default Grid", vertexShader, pixelShader);
+	mDefault->SetAlbedo(srvDefaultGrid);
+	mDefault->AddSampler("BasicSampler", texSampler);
+
 	// Snowglobe
 	std::shared_ptr<Material> mSnowglobe = std::make_shared<Material>("Snowglobe", vertexShader, pixelShader);
 	mSnowglobe->SetAllPbrTextures(srvSnowglobe);
@@ -165,6 +170,7 @@ void Game::CreateMaterials()
 	mSnowman->SetNormal(srvDefaultNormalMap);
 	mSnowman->AddSampler("BasicSampler", texSampler);
 
+	materials.push_back(mDefault);
 	materials.push_back(mSnowglobe);
 	materials.push_back(mChristmasTree);
 	materials.push_back(mSnowman);
@@ -310,7 +316,15 @@ void Game::SetupShadows(int resolution)
 
 void Game::LoadTextures()
 {
-	
+	// Default Grid
+	CreateWICTextureFromFile(
+		device.Get(),
+		context.Get(),
+		FixPath(L"../../Assets/Textures/default_albedo.png").c_str(),
+		nullptr,
+		srvDefaultGrid.GetAddressOf()
+	);
+
 	// Snowglobe
 	CreateWICTextureFromFile(
 		device.Get(),
@@ -467,7 +481,7 @@ void Game::Update(float deltaTime, float totalTime)
 
 	UpdateUI(deltaTime);
 	ImGuiMenus::WindowStats(windowWidth, windowHeight);
-	ImGuiMenus::EditScene(camera, entities, materials, &lights);
+	ImGuiMenus::EditScene(camera, entities, materials, &lights, device, context);
 
 	// Update the camera
 	if (camera != 0)

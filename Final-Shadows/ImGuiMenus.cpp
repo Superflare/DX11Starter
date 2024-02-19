@@ -31,10 +31,12 @@ void ImGuiMenus::WindowStats(int windowWidth, int windowHeight)
 // Provide runtime tools to edit the precreated rendered scene
 // ------------------------------------------------------------------
 void ImGuiMenus::EditScene(
-	std::shared_ptr<Camera> cam,
-	std::vector<std::shared_ptr<GameEntity>> entities,
-	std::vector<std::shared_ptr<Material>> materials,
-	std::vector<Light>* lights
+	const std::shared_ptr<Camera>& cam,
+	std::vector<std::shared_ptr<GameEntity>>& entities,
+	const std::vector<std::shared_ptr<Material>>& materials,
+	std::vector<Light>* lights,
+	const Microsoft::WRL::ComPtr<ID3D11Device>& device,
+	const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context
 	)
 {
 	ImGui::Begin("Edit Scene");
@@ -42,7 +44,7 @@ void ImGuiMenus::EditScene(
 	if (ImGui::BeginTabBar("Scene Components"))
 	{
 		// Give camera-specific editing options
-		if (ImGui::BeginTabItem("Cameras"))
+		if (ImGui::BeginTabItem("Scene Camera"))
 		{
 			ImGui::Spacing();
 
@@ -87,8 +89,65 @@ void ImGuiMenus::EditScene(
 		// Allow for transformation changes of game entities within the world
 		if (ImGui::BeginTabItem("Entities"))
 		{
+			// Create new entities from a list of basic shapes
+			if (ImGui::Button("Add New.."))
+				ImGui::OpenPopup("new entity popup");
+			
+			if (ImGui::BeginPopup("new entity popup"))
+			{
+				ImGui::SeparatorText("Basic Shapes");
+				ImGui::SeparatorText("3D");
+
+				if (ImGui::Selectable("Cube"))
+				{
+					std::shared_ptr<Mesh> m = std::make_shared<Mesh>("../../Assets/Models/cube.obj", device, context);
+					entities.push_back(std::make_shared<GameEntity>(m, materials[0]));
+				}
+
+				if (ImGui::Selectable("Sphere"))
+				{
+					std::shared_ptr<Mesh> m = std::make_shared<Mesh>("../../Assets/Models/sphere.obj", device, context);
+					entities.push_back(std::make_shared<GameEntity>(m, materials[0]));
+				}
+
+				if (ImGui::Selectable("Cylinder"))
+				{
+					std::shared_ptr<Mesh> m = std::make_shared<Mesh>("../../Assets/Models/cylinder.obj", device, context);
+					entities.push_back(std::make_shared<GameEntity>(m, materials[0]));
+				}
+
+				if (ImGui::Selectable("Torus"))
+				{
+					std::shared_ptr<Mesh> m = std::make_shared<Mesh>("../../Assets/Models/torus.obj", device, context);
+					entities.push_back(std::make_shared<GameEntity>(m, materials[0]));
+				}
+
+				if (ImGui::Selectable("Helix"))
+				{
+					std::shared_ptr<Mesh> m = std::make_shared<Mesh>("../../Assets/Models/helix.obj", device, context);
+					entities.push_back(std::make_shared<GameEntity>(m, materials[0]));
+				}
+
+				ImGui::SeparatorText("2D");
+
+				if (ImGui::Selectable("Quad"))
+				{
+					std::shared_ptr<Mesh> m = std::make_shared<Mesh>("../../Assets/Models/quad.obj", device, context);
+					entities.push_back(std::make_shared<GameEntity>(m, materials[0]));
+				}
+
+				if (ImGui::Selectable("Quad Double Sided"))
+				{
+					std::shared_ptr<Mesh> m = std::make_shared<Mesh>("../../Assets/Models/quad_double_sided.obj", device, context);
+					entities.push_back(std::make_shared<GameEntity>(m, materials[0]));
+				}
+
+				ImGui::EndPopup();
+			}
+
 			ImGui::Spacing();
 
+			// Manipulate entities already in the scene
 			for (int i = 0; i < entities.size(); i++)
 			{
 				ImGui::PushID(i);
@@ -124,6 +183,11 @@ void ImGuiMenus::EditScene(
 					ImGui::Spacing();
 					ImGui::Text("Mesh index count: %d", entities[i]->GetMesh()->GetIndexCount());
 
+					// Delete entity
+					ImGui::Spacing();
+					if (ImGui::Button("Delete"))
+						entities.erase(entities.begin() + i);
+					ImGui::Spacing();
 
 					ImGui::TreePop();
 				}

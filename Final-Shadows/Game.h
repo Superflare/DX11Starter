@@ -58,6 +58,7 @@ private:
 	std::shared_ptr<SimpleVertexShader> shadowMapVertexShader;
 
 	// Textures, SRVs, and Sampler States
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvDefaultGrid;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvSnowglobe[4];
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvChristmasTree;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvSnowman;

@@ -13,7 +13,7 @@ public:
 		std::shared_ptr<SimpleVertexShader> vxShader,
 		std::shared_ptr<SimplePixelShader> pxShader,
 		DirectX::XMFLOAT4 colorTint = DirectX::XMFLOAT4(1, 1, 1, 1),
-		float roughness = 0.0f,
+		float roughness = 0.5f,
 		float metallic = 0.0f,
 		float texScale = 1.0f,
 		DirectX::XMFLOAT2 texOffset = DirectX::XMFLOAT2(0, 0)

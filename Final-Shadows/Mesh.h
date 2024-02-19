@@ -9,9 +9,9 @@ class Mesh
 {
 public:
 	Mesh(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount,
-		Microsoft::WRL::ComPtr<ID3D11Device> device, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-	Mesh(const wchar_t* objFile, Microsoft::WRL::ComPtr<ID3D11Device> device, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
-	Mesh(std::string objFile, Microsoft::WRL::ComPtr<ID3D11Device> device, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+		const Microsoft::WRL::ComPtr<ID3D11Device>& device, const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context);
+	Mesh(const wchar_t* objFile, const Microsoft::WRL::ComPtr<ID3D11Device>& device, const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context);
+	Mesh(std::string objFile, const Microsoft::WRL::ComPtr<ID3D11Device>& device, const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context);
 	~Mesh();
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> GetVertexBuffer() { return vertexBuffer; }
@@ -22,7 +22,7 @@ public:
 
 private:
 	void CreateVertexIndexBuffers(Vertex* vertices, int vertexCount, unsigned int* indices, int indexCount,
-		Microsoft::WRL::ComPtr<ID3D11Device> device);
+		const Microsoft::WRL::ComPtr<ID3D11Device>& device);
 	void CalculateTangents(Vertex* verts, int numVerts, unsigned int* indices, int numIndices);
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer;
