@@ -481,7 +481,7 @@ void Game::Update(float deltaTime, float totalTime)
 
 	UpdateUI(deltaTime);
 	ImGuiMenus::WindowStats(windowWidth, windowHeight);
-	ImGuiMenus::EditScene(camera, entities, materials, &lights, device, context);
+	ImGuiMenus::EditScene(camera, entities, materials, lights, device, context);
 
 	// Update the camera
 	if (camera != 0)

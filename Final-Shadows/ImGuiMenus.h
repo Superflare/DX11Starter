@@ -16,7 +16,7 @@ namespace ImGuiMenus
 		const std::shared_ptr<Camera>& cam,
 		std::vector<std::shared_ptr<GameEntity>>& entities,
 		const std::vector<std::shared_ptr<Material>>& materials,
-		std::vector<Light>* lights,
+		std::vector<Light>& lights,
 		const Microsoft::WRL::ComPtr<ID3D11Device>& device,
 		const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context
 	);
