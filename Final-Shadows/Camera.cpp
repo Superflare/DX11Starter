@@ -94,29 +94,18 @@ void Camera::Update(float dt)
 #pragma region Keyboard Controls
 
 	// Alter camera movement speeds
-	//float regMovSpeed = movSpeed;
-	//float regMouseSpeed = mouseSpeed;
+	float regMovSpeed = movSpeed;
+	float regMouseSpeed = mouseSpeed;
 
-	if (input.KeyPress(VK_SHIFT) && input.KeyUp(VK_CONTROL))
+	if (input.KeyDown(VK_SHIFT) && input.KeyUp(VK_CONTROL))
 	{
 		movSpeed *= 2.0f;
-		//mouseSpeed *= 2.0f;
-	}
-	else if (input.KeyRelease(VK_SHIFT))
-	{
-		movSpeed /= 2.0f;
-		//mouseSpeed /= 2.0f;
 	}
 
-	if (input.KeyPress(VK_CONTROL) && input.KeyUp(VK_SHIFT))
+	if (input.KeyDown(VK_CONTROL) && input.KeyUp(VK_SHIFT))
 	{
 		movSpeed *= 0.2f;
 		mouseSpeed *= 0.2f;
-	}
-	else if (input.KeyRelease(VK_CONTROL))
-	{
-		movSpeed /= 0.2f;
-		mouseSpeed /= 0.2f;
 	}
 
 	// WASD for simple movement controls
@@ -138,7 +127,7 @@ void Camera::Update(float dt)
 	}
 
 	// Hold E to move up and hold Q to move down
-	if (input.KeyDown('E'))
+	if (input.KeyDown('E') || input.KeyDown(VK_SPACE))
 	{
 		transform.MoveRelative(0, movSpeed * dt, 0);
 	}
@@ -175,8 +164,8 @@ void Camera::Update(float dt)
 
 #pragma endregion
 
-	//movSpeed = regMovSpeed;
-	//mouseSpeed = regMouseSpeed;
+	movSpeed = regMovSpeed;
+	mouseSpeed = regMouseSpeed;
 
 	UpdateViewMatrix();
 }
