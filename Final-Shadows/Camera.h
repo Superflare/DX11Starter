@@ -13,7 +13,7 @@ public:
 	Camera(DirectX::XMFLOAT3 startPos, DirectX::XMFLOAT4 startRot,
 		float aspect = 16.0f/9.0f, float fov = DirectX::XM_PIDIV4,
 		float nearClip = 0.1f, float farClip = 1000.0f,
-		float movSpeed = 10.0f, float mouseSpeed = 1.0f,
+		float movSpeed = 10.0f, float mouseSpeed = 30.0f,
 		ProjectionType projType = Perspective);
 
 	void UpdateViewMatrix();

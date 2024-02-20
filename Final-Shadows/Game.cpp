@@ -441,12 +441,12 @@ void Game::PositionGeometry()
 	std::shared_ptr<GameEntity> christmasTree = entities[1];
 	christmasTree->GetTransform()->SetScale(0.08f);
 	christmasTree->GetTransform()->SetPosition(-1.58f, 5.44f, -5.2f);
-	christmasTree->GetTransform()->Rotate(0.f, Deg2Rad(-33.6f), 0.f);
+	christmasTree->GetTransform()->RotatePitchYawRollWorld(0.f, Deg2Rad(-33.6f), 0.f);
 
 	std::shared_ptr<GameEntity> snowman = entities[2];
 	snowman->GetTransform()->SetScale(.5f);
 	snowman->GetTransform()->SetPosition(3.47f, 5.29f, -4.98f);
-	snowman->GetTransform()->Rotate(0.f, Deg2Rad(-88.2f), 0.f);
+	snowman->GetTransform()->RotatePitchYawRollWorld(0.f, Deg2Rad(-88.2f), 0.f);
 }
 
 void Game::UpdateGeometry()

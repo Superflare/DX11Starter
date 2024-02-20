@@ -14,15 +14,16 @@ public:
 	void SetScale(float x, float y, float z);
 	void SetScale(float s);
 	void SetScale(DirectX::XMFLOAT3 size);
-	void SetRotation(DirectX::XMMATRIX m);
-	void SetRotation(DirectX::XMFLOAT4X4 m);
+	void SetRotation(DirectX::XMVECTOR q);
+	void SetRotation(DirectX::XMFLOAT4 q);
 	void SetRotation(float pitch, float yaw, float roll);
 	void SetRotation(DirectX::XMFLOAT3 pitchYawRoll);
-	void SetRotation(DirectX::XMFLOAT4 q);
-	void SetRotation(DirectX::XMVECTOR q);
+	void SetRotation(DirectX::XMMATRIX m);
+	void SetRotation(DirectX::XMFLOAT4X4 m);
 
-	DirectX::XMFLOAT3 GetPosition() { return position; }
-	DirectX::XMFLOAT3 GetScale() { return scale; }
+
+	inline DirectX::XMFLOAT3 GetPosition() { return position; }
+	inline DirectX::XMFLOAT3 GetScale() { return scale; }
 	DirectX::XMFLOAT4X4 GetRotationFloat4X4();
 	DirectX::XMMATRIX GetRotationMatrix();
 
@@ -41,12 +42,16 @@ public:
 	void Scale(float x, float y, float z);
 	void Scale(float s);
 	void Scale(DirectX::XMFLOAT3 size);
-	void Rotate(float pitch, float yaw, float roll);
-	void Rotate(float radians, DirectX::XMFLOAT3 rotateAround = DirectX::XMFLOAT3(0, 0, -1.0f));
-	
-	DirectX::XMFLOAT3 GetRight() {return rightVector; }
-	DirectX::XMFLOAT3 GetUp() { return upVector; }
-	DirectX::XMFLOAT3 GetForward() { return forwardVector; }
+	void RotatePitchYawRollLocal(float pitch, float yaw, float roll);
+	void RotatePitchYawRollLocal(DirectX::XMFLOAT3 pitchYawRoll);
+	void RotatePitchYawRollWorld(float pitch, float yaw, float roll);
+	void RotatePitchYawRollWorld(DirectX::XMFLOAT3 pitchYawRoll);
+	void RotateAxisLocal(float radians, DirectX::XMFLOAT3 rotateAround = DirectX::XMFLOAT3(0, 0, -1.0f));
+	void RotateAxisWorld(float radians, DirectX::XMFLOAT3 rotateAround = DirectX::XMFLOAT3(0, 0, -1.0f));
+
+	inline DirectX::XMFLOAT3 GetRight();
+	inline DirectX::XMFLOAT3 GetUp();
+	inline DirectX::XMFLOAT3 GetForward();
 
 private:
 	DirectX::XMFLOAT4X4 worldMatrix;
@@ -55,10 +60,11 @@ private:
 	DirectX::XMFLOAT3 position;
 	DirectX::XMFLOAT3 scale;
 	DirectX::XMFLOAT3 pitchYawRoll;
+	DirectX::XMFLOAT4 qRotation;
 
-	DirectX::XMFLOAT3 rightVector;
-	DirectX::XMFLOAT3 upVector;
-	DirectX::XMFLOAT3 forwardVector;
+	//DirectX::XMFLOAT3 rightVector;
+	//DirectX::XMFLOAT3 upVector;
+	//DirectX::XMFLOAT3 forwardVector;
 
 	bool transformChanged;
 	bool rotationChanged;

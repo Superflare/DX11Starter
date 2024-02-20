@@ -94,21 +94,21 @@ void Camera::Update(float dt)
 #pragma region Keyboard Controls
 
 	// Alter camera movement speeds
-	float regMovSpeed = movSpeed;
-	float regMouseSpeed = mouseSpeed;
+	//float regMovSpeed = movSpeed;
+	//float regMouseSpeed = mouseSpeed;
 
-	if (input.KeyDown(VK_SHIFT) && input.KeyUp(VK_CONTROL))
+	if (input.KeyPress(VK_SHIFT) && input.KeyUp(VK_CONTROL))
 	{
 		movSpeed *= 2.0f;
-		mouseSpeed *= 2.0f;
+		//mouseSpeed *= 2.0f;
 	}
 	else if (input.KeyRelease(VK_SHIFT))
 	{
 		movSpeed /= 2.0f;
-		mouseSpeed /= 2.0f;
+		//mouseSpeed /= 2.0f;
 	}
 
-	if (input.KeyDown(VK_CONTROL) && input.KeyUp(VK_SHIFT))
+	if (input.KeyPress(VK_CONTROL) && input.KeyUp(VK_SHIFT))
 	{
 		movSpeed *= 0.2f;
 		mouseSpeed *= 0.2f;
@@ -151,58 +151,32 @@ void Camera::Update(float dt)
 
 #pragma region Mouse Controls
 
-	if (input.MouseLeftDown())
+	if (input.MouseRightDown())
 	{
 		int cursorMovementX = input.GetMouseXDelta();
 		int cursorMovementY = input.GetMouseYDelta();
 
-		float pitch = transform.GetRotationPitchYawRoll().x;
-		float yaw = transform.GetRotationPitchYawRoll().y;
-		float roll = transform.GetRotationPitchYawRoll().z;
+		float prevPitch = transform.GetRotationPitchYawRoll().x;
+		float pitch = 0;
 
-		if (cursorMovementY > 0)
-		{
-			pitch += mouseSpeed * dt * (float)cursorMovementY;
+		pitch = Deg2Rad(mouseSpeed * dt * (float)cursorMovementY);
 
-			// Clamp the rotation so the farthest down the camera can look is straight down
-			if (pitch > Deg2Rad(90))
-			{
-				pitch = Deg2Rad(89.9f);
-			}
+		// Clamp the pitch rotation so the camera can't flip over and render upside down
+		if (prevPitch + pitch > Deg2Rad(89.8) || prevPitch + pitch < Deg2Rad(-89.8))
+			pitch = 0;
 
-			transform.SetRotation(pitch, yaw, roll);
-		}
-		else if (cursorMovementY < 0)
-		{
-			pitch += mouseSpeed * dt * (float)cursorMovementY;
+		float yaw = Deg2Rad(mouseSpeed * dt * (float)cursorMovementX);
 
-			// Clamp the rotation so the farthest up the camera can look is straight up
-			if (pitch < Deg2Rad(-90))
-			{
-				pitch = Deg2Rad(-89.9f);
-			}
+		//transform.Rotate(pitch, yaw, 0);
 
-			transform.SetRotation(pitch, yaw, roll);
-		}
-
-		if (cursorMovementX > 0)
-		{
-			yaw += mouseSpeed * dt * (float)cursorMovementX;
-
-			transform.SetRotation(pitch, yaw, roll);
-		}
-		else if (cursorMovementX < 0)
-		{
-			yaw += mouseSpeed * dt * (float)cursorMovementX;
-
-			transform.SetRotation(pitch, yaw, roll);
-		}
+		transform.RotateAxisLocal(pitch, XMFLOAT3(1, 0, 0));
+		transform.RotateAxisWorld(yaw, XMFLOAT3(0, 1, 0));
 	}
 
 #pragma endregion
 
-	movSpeed = regMovSpeed;
-	mouseSpeed = regMouseSpeed;
+	//movSpeed = regMovSpeed;
+	//mouseSpeed = regMouseSpeed;
 
 	UpdateViewMatrix();
 }

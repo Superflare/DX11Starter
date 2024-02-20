@@ -20,7 +20,7 @@ Transform::Transform(DirectX::XMFLOAT3 position, DirectX::XMFLOAT3 scale, Direct
 {
 	XMStoreFloat4x4(&worldMatrix, XMMatrixIdentity());
 	XMStoreFloat4x4(&worldInverseTransposeMatrix, XMMatrixIdentity());
-	SetRotation(rotationQuat);
+	qRotation = rotationQuat;
 	pitchYawRoll = GetRotationPitchYawRoll();
 }
 
@@ -68,40 +68,9 @@ void Transform::SetScale(DirectX::XMFLOAT3 size)
 	transformChanged = true;
 }
 
-void Transform::SetRotation(DirectX::XMMATRIX m)
+void Transform::SetRotation(DirectX::XMVECTOR q)
 {
-	XMFLOAT4X4 rotMat;
-	XMStoreFloat4x4(&rotMat, m);
-
-	rightVector = XMFLOAT3(rotMat._11, rotMat._12, rotMat._13);
-	upVector = XMFLOAT3(rotMat._21, rotMat._22, rotMat._23);
-	forwardVector = XMFLOAT3(rotMat._31, rotMat._32, rotMat._33);
-
-	transformChanged = true;
-	rotationChanged = true;
-}
-
-void Transform::SetRotation(DirectX::XMFLOAT4X4 m)
-{
-	rightVector = XMFLOAT3(m._11, m._12, m._13);
-	upVector = XMFLOAT3(m._21, m._22, m._23);
-	forwardVector = XMFLOAT3(m._31, m._32, m._33);
-
-	transformChanged = true;
-	rotationChanged = true;
-}
-
-void Transform::SetRotation(float pitch, float yaw, float roll)
-{
-	SetRotation(XMMatrixRotationRollPitchYaw(pitch, yaw, roll));
-
-	transformChanged = true;
-	rotationChanged = true;
-}
-
-void Transform::SetRotation(DirectX::XMFLOAT3 pitchYawRoll)
-{
-	SetRotation(XMMatrixRotationRollPitchYawFromVector(XMLoadFloat3(&pitchYawRoll)));
+	XMStoreFloat4(&qRotation, q);
 
 	transformChanged = true;
 	rotationChanged = true;
@@ -109,18 +78,27 @@ void Transform::SetRotation(DirectX::XMFLOAT3 pitchYawRoll)
 
 void Transform::SetRotation(DirectX::XMFLOAT4 q)
 {
-	SetRotation(XMMatrixRotationQuaternion(XMLoadFloat4(&q)));
-
-	transformChanged = true;
-	rotationChanged = true;
+	SetRotation(XMLoadFloat4(&q));
 }
 
-void Transform::SetRotation(DirectX::XMVECTOR q)
+void Transform::SetRotation(float pitch, float yaw, float roll)
 {
-	SetRotation(XMMatrixRotationQuaternion(q));
+	SetRotation(XMQuaternionRotationRollPitchYaw(pitch, yaw, roll));
+}
 
-	transformChanged = true;
-	rotationChanged = true;
+void Transform::SetRotation(DirectX::XMFLOAT3 pitchYawRoll)
+{
+	SetRotation(XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&pitchYawRoll)));
+}
+
+void Transform::SetRotation(DirectX::XMMATRIX m)
+{
+	SetRotation(XMQuaternionRotationMatrix(m));
+}
+
+void Transform::SetRotation(DirectX::XMFLOAT4X4 m)
+{
+	SetRotation(XMQuaternionRotationMatrix(XMLoadFloat4x4(&m)));
 }
 
 void Transform::MoveAbsolute(float x, float y, float z)
@@ -147,8 +125,7 @@ void Transform::MoveAbsolute(DirectX::XMFLOAT3 move)
 void Transform::MoveRelative(float x, float y, float z)
 {
 	XMVECTOR moveAbsolute = XMVectorSet(x, y, z, 1.0f);
-	XMVECTOR rot = XMQuaternionRotationMatrix(GetRotationMatrix());
-	XMVECTOR moveRelative = XMVector3Rotate(moveAbsolute, rot);
+	XMVECTOR moveRelative = XMVector3Rotate(moveAbsolute, XMLoadFloat4(&qRotation));
 
 	XMStoreFloat3(&position, XMLoadFloat3(&position) + moveRelative);
 	
@@ -158,8 +135,7 @@ void Transform::MoveRelative(float x, float y, float z)
 void Transform::MoveRelative(DirectX::XMFLOAT3 move)
 {
 	XMVECTOR moveAbsolute = XMLoadFloat3(&move);
-	XMVECTOR rot = XMQuaternionRotationMatrix(GetRotationMatrix());
-	XMVECTOR moveRelative = XMVector3Rotate(moveAbsolute, rot);
+	XMVECTOR moveRelative = XMVector3Rotate(moveAbsolute, XMLoadFloat4(&qRotation));
 
 	XMStoreFloat3(&position, XMLoadFloat3(&position) + moveRelative);
 
@@ -193,38 +169,85 @@ void Transform::Scale(DirectX::XMFLOAT3 size)
 	transformChanged = true;
 }
 
-void Transform::Rotate(float pitch, float yaw, float roll)
+void Transform::RotatePitchYawRollLocal(float pitch, float yaw, float roll)
 {
-	XMVECTOR newQuaternion = XMQuaternionRotationRollPitchYaw(pitch, yaw, roll);
-	XMVECTOR combinedQuaternion = XMQuaternionMultiply(newQuaternion, XMQuaternionRotationMatrix(GetRotationMatrix()));
+	XMVECTOR newRot = XMQuaternionRotationRollPitchYaw(pitch, yaw, roll);
+	XMVECTOR combined = XMQuaternionMultiply(newRot, XMLoadFloat4(&qRotation));
 
-	SetRotation(combinedQuaternion);
-
-	pitchYawRoll.x += pitch;
-	pitchYawRoll.y += yaw;
-	pitchYawRoll.z += roll;
-
-	transformChanged = true;
-	rotationChanged = true;
+	SetRotation(combined);
 }
 
-void Transform::Rotate(float radians, DirectX::XMFLOAT3 rotateAround)
+void Transform::RotatePitchYawRollLocal(DirectX::XMFLOAT3 pitchYawRoll)
 {
-	XMVECTOR newQuaternion = XMQuaternionRotationNormal(XMLoadFloat3(&rotateAround), radians);
-	XMVECTOR combinedQuaternion = XMQuaternionMultiply(newQuaternion, XMQuaternionRotationMatrix(GetRotationMatrix()));
+	XMVECTOR newRot = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&pitchYawRoll));
+	XMVECTOR combined = XMQuaternionMultiply(newRot, XMLoadFloat4(&qRotation));
 
-	SetRotation(combinedQuaternion);
+	SetRotation(combined);
+}
 
-	transformChanged = true;
-	rotationChanged = true;
+void Transform::RotatePitchYawRollWorld(float pitch, float yaw, float roll)
+{
+	XMVECTOR newRot = XMQuaternionRotationRollPitchYaw(pitch, yaw, roll);
+	XMVECTOR combined = XMQuaternionMultiply(XMLoadFloat4(&qRotation), newRot);
+
+	SetRotation(combined);
+}
+
+void Transform::RotatePitchYawRollWorld(DirectX::XMFLOAT3 pitchYawRoll)
+{
+	XMVECTOR newRot = XMQuaternionRotationRollPitchYawFromVector(XMLoadFloat3(&pitchYawRoll));
+	XMVECTOR combined = XMQuaternionMultiply(XMLoadFloat4(&qRotation), newRot);
+
+	SetRotation(combined);
+}
+
+void Transform::RotateAxisLocal(float radians, DirectX::XMFLOAT3 rotateAround)
+{
+	XMVECTOR newRot = XMQuaternionRotationAxis(XMLoadFloat3(&rotateAround), radians);
+	XMVECTOR combined = XMQuaternionMultiply(newRot, XMLoadFloat4(&qRotation));
+
+	SetRotation(combined);
+}
+
+void Transform::RotateAxisWorld(float radians, DirectX::XMFLOAT3 rotateAround)
+{
+	XMVECTOR newRot = XMQuaternionRotationAxis(XMLoadFloat3(&rotateAround), radians);
+	XMVECTOR combined = XMQuaternionMultiply(XMLoadFloat4(&qRotation), newRot);
+
+	SetRotation(combined);
 }
 
 // ------------------------------------------------------------------
 // Get Transform Properties
 // ------------------------------------------------------------------
+DirectX::XMFLOAT3 Transform::GetRight()
+{
+	UpdateWorldMatrix();
+
+	return XMFLOAT3(worldMatrix._11, worldMatrix._12, worldMatrix._13);
+}
+
+DirectX::XMFLOAT3 Transform::GetUp()
+{
+	UpdateWorldMatrix();
+
+	return XMFLOAT3(worldMatrix._21, worldMatrix._22, worldMatrix._23);
+}
+
+DirectX::XMFLOAT3 Transform::GetForward()
+{
+	UpdateWorldMatrix();
+
+	return XMFLOAT3(worldMatrix._31, worldMatrix._32, worldMatrix._33);
+}
+
 DirectX::XMFLOAT4X4 Transform::GetRotationFloat4X4()
 {
 	XMFLOAT4X4 rotMat;
+	XMFLOAT3 rightVector = GetRight();
+	XMFLOAT3 upVector = GetUp();
+	XMFLOAT3 forwardVector = GetForward();
+
 	XMStoreFloat4x4(&rotMat, XMMatrixSet(rightVector.x, rightVector.y, rightVector.z, 0,
 		upVector.x, upVector.y, upVector.z, 0,
 		forwardVector.x, forwardVector.y, forwardVector.z, 0,
@@ -235,6 +258,10 @@ DirectX::XMFLOAT4X4 Transform::GetRotationFloat4X4()
 
 DirectX::XMMATRIX Transform::GetRotationMatrix()
 {
+	XMFLOAT3 rightVector = GetRight();
+	XMFLOAT3 upVector = GetUp();
+	XMFLOAT3 forwardVector = GetForward();
+
 	return XMMatrixSet(rightVector.x, rightVector.y, rightVector.z, 0,
 		upVector.x, upVector.y, upVector.z, 0,
 		forwardVector.x, forwardVector.y, forwardVector.z, 0,
@@ -270,10 +297,7 @@ void Transform::UpdateWorldMatrix()
 	if (transformChanged)
 	{
 		XMMATRIX scaleMatrix = XMMatrixScaling(scale.x, scale.y, scale.z);
-		XMMATRIX rotationMatrix = XMMatrixSet(rightVector.x, rightVector.y, rightVector.z, 0,
-			upVector.x, upVector.y, upVector.z, 0,
-			forwardVector.x, forwardVector.y, forwardVector.z, 0,
-			0, 0, 0, 1);
+		XMMATRIX rotationMatrix = XMMatrixRotationQuaternion(XMLoadFloat4(&qRotation));
 		XMMATRIX translationMatrix = XMMatrixTranslation(position.x, position.y, position.z);
 		XMMATRIX world = scaleMatrix * rotationMatrix * translationMatrix;
 
@@ -288,6 +312,10 @@ void Transform::UpdatePitchYawRoll()
 {
 	if (rotationChanged)
 	{
+		XMFLOAT3 rightVector = GetRight();
+		XMFLOAT3 upVector = GetUp();
+		XMFLOAT3 forwardVector = GetForward();
+
 		// Solution derived from:
 		// https://stackoverflow.com/questions/60350349/directx-get-pitch-yaw-roll-from-xmmatrix
 		pitchYawRoll.x = XMScalarASin(-forwardVector.y);
