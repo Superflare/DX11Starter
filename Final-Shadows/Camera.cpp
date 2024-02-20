@@ -162,7 +162,7 @@ void Camera::Update(float dt)
 		pitch = Deg2Rad(mouseSpeed * dt * (float)cursorMovementY);
 
 		// Clamp the pitch rotation so the camera can't flip over and render upside down
-		if (prevPitch + pitch > Deg2Rad(89.8) || prevPitch + pitch < Deg2Rad(-89.8))
+		if (prevPitch + pitch > Deg2Rad(89.8f) || prevPitch + pitch < Deg2Rad(-89.8f))
 			pitch = 0;
 
 		float yaw = Deg2Rad(mouseSpeed * dt * (float)cursorMovementX);
