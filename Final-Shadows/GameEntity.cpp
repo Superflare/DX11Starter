@@ -1,9 +1,10 @@
 #include "GameEntity.h"
 
-GameEntity::GameEntity(std::shared_ptr<Mesh> meshRef, std::shared_ptr<Material> mat)
+GameEntity::GameEntity(std::shared_ptr<Mesh> meshRef, std::shared_ptr<Material> mat, GameEntityOptionFlags_ optionFlags)
 	:
 	mesh(meshRef),
-	material(mat)
+	material(mat),
+	optionFlags(optionFlags)
 {
 	transform = Transform();
 }
@@ -12,6 +13,8 @@ void GameEntity::Draw(
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
 	std::shared_ptr<Camera> camera)
 {
+	HandleOptionFlags();
+
 	// Set the active shaders to this entity's material
 	material->GetVertexShader()->SetShader();
 	material->GetPixelShader()->SetShader();
@@ -34,4 +37,12 @@ void GameEntity::Draw(
 
 	// Render this game entity's mesh
 	mesh->Draw();
+}
+
+void GameEntity::HandleOptionFlags()
+{
+	if ((optionFlags & GameEntityOptionFlags_MatWorldScale) != 0)
+	{
+		material->SetTextureScale(1.0f / max(max(transform.GetScale().x, transform.GetScale().y), transform.GetScale().z));
+	}
 }

@@ -11,7 +11,7 @@ Camera::Camera(DirectX::XMFLOAT3 startPos, DirectX::XMFLOAT4 startRot,
 	:
 	aspect(aspect),
 	fov(fov),
-	orthoWidth(1280),
+	orthoWidth(1600),
 	orthoHeight(orthoWidth / aspect),
 	nearClip(nearClip),
 	farClip(farClip),

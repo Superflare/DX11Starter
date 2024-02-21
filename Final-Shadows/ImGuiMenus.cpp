@@ -101,31 +101,31 @@ void ImGuiMenus::EditScene(
 				if (ImGui::Selectable("Cube"))
 				{
 					std::shared_ptr<Mesh> m = std::make_shared<Mesh>("../../Assets/Models/cube.obj", device, context);
-					entities.push_back(std::make_shared<GameEntity>(m, materials[0]));
+					entities.push_back(std::make_shared<GameEntity>(m, materials[0], GameEntityOptionFlags_MatWorldScale));
 				}
 
 				if (ImGui::Selectable("Sphere"))
 				{
 					std::shared_ptr<Mesh> m = std::make_shared<Mesh>("../../Assets/Models/sphere.obj", device, context);
-					entities.push_back(std::make_shared<GameEntity>(m, materials[0]));
+					entities.push_back(std::make_shared<GameEntity>(m, materials[0], GameEntityOptionFlags_MatWorldScale));
 				}
 
 				if (ImGui::Selectable("Cylinder"))
 				{
 					std::shared_ptr<Mesh> m = std::make_shared<Mesh>("../../Assets/Models/cylinder.obj", device, context);
-					entities.push_back(std::make_shared<GameEntity>(m, materials[0]));
+					entities.push_back(std::make_shared<GameEntity>(m, materials[0], GameEntityOptionFlags_MatWorldScale));
 				}
 
 				if (ImGui::Selectable("Torus"))
 				{
 					std::shared_ptr<Mesh> m = std::make_shared<Mesh>("../../Assets/Models/torus.obj", device, context);
-					entities.push_back(std::make_shared<GameEntity>(m, materials[0]));
+					entities.push_back(std::make_shared<GameEntity>(m, materials[0], GameEntityOptionFlags_MatWorldScale));
 				}
 
 				if (ImGui::Selectable("Helix"))
 				{
 					std::shared_ptr<Mesh> m = std::make_shared<Mesh>("../../Assets/Models/helix.obj", device, context);
-					entities.push_back(std::make_shared<GameEntity>(m, materials[0]));
+					entities.push_back(std::make_shared<GameEntity>(m, materials[0], GameEntityOptionFlags_MatWorldScale));
 				}
 
 				ImGui::SeparatorText("2D");
@@ -133,13 +133,13 @@ void ImGuiMenus::EditScene(
 				if (ImGui::Selectable("Quad"))
 				{
 					std::shared_ptr<Mesh> m = std::make_shared<Mesh>("../../Assets/Models/quad.obj", device, context);
-					entities.push_back(std::make_shared<GameEntity>(m, materials[0]));
+					entities.push_back(std::make_shared<GameEntity>(m, materials[0], GameEntityOptionFlags_MatWorldScale));
 				}
 
 				if (ImGui::Selectable("Quad Double Sided"))
 				{
 					std::shared_ptr<Mesh> m = std::make_shared<Mesh>("../../Assets/Models/quad_double_sided.obj", device, context);
-					entities.push_back(std::make_shared<GameEntity>(m, materials[0]));
+					entities.push_back(std::make_shared<GameEntity>(m, materials[0], GameEntityOptionFlags_MatWorldScale));
 				}
 
 				ImGui::EndPopup();

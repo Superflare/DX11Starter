@@ -24,8 +24,8 @@ Game::Game(HINSTANCE hInstance)
 	: DXCore(
 		hInstance,			// The application's handle
 		L"DirectX Game",	// Text for the window's title bar (as a wide-character string)
-		1280,				// Width of the window's client area
-		720,				// Height of the window's client area
+		1600,				// Width of the window's client area
+		900,				// Height of the window's client area
 		false,				// Sync the framerate to the monitor refresh? (lock framerate)
 		true)				// Show extra stats (fps) in title bar?
 {
@@ -36,9 +36,15 @@ Game::Game(HINSTANCE hInstance)
 #endif
 
 	// Initialize the game's camera
+	// Test scene
 	XMFLOAT4 camStartRot;
+	XMStoreFloat4(&camStartRot, XMQuaternionIdentity());
+	camera = std::make_shared<Camera>(XMFLOAT3(5.0f, 10.0f, -30.0f), camStartRot);
+
+	// Snowglobe scene
+	/*XMFLOAT4 camStartRot;
 	XMStoreFloat4(&camStartRot, XMQuaternionRotationAxis(XMVectorSet(1,0,0,0), Deg2Rad(30)));
-	camera = std::make_shared<Camera>(XMFLOAT3(-2.0f, 22.0f, -28.3f), camStartRot, (float)1280 / 720);
+	camera = std::make_shared<Camera>(XMFLOAT3(-2.0f, 22.0f, -28.3f), camStartRot);*/
 }
 
 // --------------------------------------------------------
@@ -128,10 +134,12 @@ void Game::LoadShaders()
 // --------------------------------------------------------
 void Game::CreateGeometry()
 {
-	meshes.push_back(std::make_shared<Mesh>("../../Assets/Models/snowglobe.obj", device, context));
-	meshes.push_back(std::make_shared<Mesh>("../../Assets/Models/christmas_tree.obj", device, context));
 	meshes.push_back(std::make_shared<Mesh>("../../Assets/Models/cube.obj", device, context));
-	meshes.push_back(std::make_shared<Mesh>("../../Assets/Models/snowman.obj", device, context));
+
+	// Snowglobe scene
+	/*meshes.push_back(std::make_shared<Mesh>("../../Assets/Models/snowglobe.obj", device, context));
+	meshes.push_back(std::make_shared<Mesh>("../../Assets/Models/christmas_tree.obj", device, context));
+	meshes.push_back(std::make_shared<Mesh>("../../Assets/Models/snowman.obj", device, context));*/
 }
 
 // Create a list of Game Entities to be rendered to the screen and initialize their starting transforms
@@ -139,9 +147,16 @@ void Game::CreateGeometry()
 void Game::CreateEntities()
 {
 	// Set up the Game Entity list using the pre-created meshes
-	entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[1]));
-	entities.push_back(std::make_shared<GameEntity>(meshes[1], materials[2]));
-	entities.push_back(std::make_shared<GameEntity>(meshes[3], materials[3]));
+
+	// Testing scene
+	entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[0], GameEntityOptionFlags_MatWorldScale));
+	entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[0], GameEntityOptionFlags_MatWorldScale));
+	entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[0], GameEntityOptionFlags_MatWorldScale));
+
+	// Snowglobe scene
+	//entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[1]));
+	//entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[2]));
+	//entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[3]));
 
 	PositionGeometry();
 }
@@ -151,6 +166,7 @@ void Game::CreateMaterials()
 	// Default Material
 	std::shared_ptr<Material> mDefault = std::make_shared<Material>("Default Grid", vertexShader, pixelShader);
 	mDefault->SetAlbedo(srvDefaultGrid);
+	mDefault->SetNormal(srvDefaultNormalMap);
 	mDefault->AddSampler("BasicSampler", texSampler);
 
 	// Snowglobe
@@ -384,7 +400,7 @@ void Game::LoadTextures()
 
 	// Create Skybox
 	skybox = std::make_shared<Sky>(
-		meshes[2],
+		meshes[0],
 		FixPath(L"../../Assets/Textures/right.png").c_str(),
 		FixPath(L"../../Assets/Textures/left.png").c_str(),
 		FixPath(L"../../Assets/Textures/up.png").c_str(),
@@ -436,17 +452,31 @@ void Game::UpdateUI(float dt)
 
 void Game::PositionGeometry()
 {
-	std::shared_ptr<GameEntity> snowglobe = entities[0];
+	// Testing scene
+	// Floor
+	entities[0]->GetTransform()->SetPosition(0, -.2f, 0);
+	entities[0]->GetTransform()->SetScale(100.0f, 0.2f, 100.0f);
 
-	std::shared_ptr<GameEntity> christmasTree = entities[1];
+	// Left wall
+	entities[1]->GetTransform()->SetPosition(-10.0f, 10.0f, 0);
+	entities[1]->GetTransform()->SetScale(1.0f, 10.0f, 100.0f);
+
+	// Back wall
+	entities[2]->GetTransform()->SetPosition(45.0f, 10.0f, 10.0f);
+	entities[2]->GetTransform()->SetScale(55.0f, 10.0f, 1.0f);
+
+	// Snowglobe scene
+	/*std::shared_ptr<GameEntity> snowglobe = entities[3];
+
+	std::shared_ptr<GameEntity> christmasTree = entities[4];
 	christmasTree->GetTransform()->SetScale(0.08f);
 	christmasTree->GetTransform()->SetPosition(-1.58f, 5.44f, -5.2f);
 	christmasTree->GetTransform()->RotatePitchYawRollWorld(0.f, Deg2Rad(-33.6f), 0.f);
 
-	std::shared_ptr<GameEntity> snowman = entities[2];
+	std::shared_ptr<GameEntity> snowman = entities[5];
 	snowman->GetTransform()->SetScale(.5f);
 	snowman->GetTransform()->SetPosition(3.47f, 5.29f, -4.98f);
-	snowman->GetTransform()->RotatePitchYawRollWorld(0.f, Deg2Rad(-88.2f), 0.f);
+	snowman->GetTransform()->RotatePitchYawRollWorld(0.f, Deg2Rad(-88.2f), 0.f);*/
 }
 
 void Game::UpdateGeometry()
