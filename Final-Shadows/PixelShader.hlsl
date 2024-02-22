@@ -11,6 +11,7 @@ cbuffer ExternalData : register(b0)
 	float uvScale;
 	float metallicFlat;
 	float2 uvOffset;
+    int skyMipCount;
 }
 
 Texture2D Albedo					: register(t0);
@@ -18,6 +19,7 @@ Texture2D NormalMap					: register(t1);
 Texture2D RoughnessMap				: register(t2);
 Texture2D MetallicMap				: register(t3);
 Texture2DArray<float4> ShadowMaps	: register(t4);
+TextureCube SkyCubeMap				: register(t5);
 
 SamplerState BasicSampler				: register(s0);
 SamplerComparisonState ShadowSampler	: register(s1);
@@ -44,6 +46,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	input.uv.y += uvOffset.y;
 	
 	float3 view = normalize(cameraPosition - input.worldPosition);
+    float3 incident = -view;
 	
 	// Calculate distance from each light that casts shadows
 	float lightDepths[MAX_NUM_SHADOW_MAPS];
@@ -67,30 +70,40 @@ float4 main(VertexToPixel input) : SV_TARGET
 	// Sample values from textures ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// Get base surface color
 	float3 albedo = DarkenToGamma(Albedo.Sample(BasicSampler, input.uv).rgb);
+	
 	// Get roughness value from texture, if a texture is provided
 	float roughness = roughnessFlat;
 	if (roughnessFlat == -1)
 		roughness = RoughnessMap.Sample(BasicSampler, input.uv).r;
 	roughness = max(roughness, MIN_ROUGHNESS);
+	
 	// Get metallic value from texture, if a texture is provided
 	float metallic = metallicFlat;
 	if (metallicFlat == -1)
 		metallic = MetallicMap.Sample(BasicSampler, input.uv).r;
-	// Get depth value of closest surface from each Shadow Map, then compare it to the actual depth of this pixel
-	float shadowAmount[MAX_NUM_SHADOW_MAPS];
-	for (int i = 0; i < MAX_NUM_SHADOW_MAPS; i++)
-	{
-		// float3(UVs to sample from, Shadow Map index in the array)
-		float3 sampleAt = float3(shadowUVs[i].x, shadowUVs[i].y, i);
-		shadowAmount[i] = ShadowMaps.SampleCmpLevelZero(ShadowSampler, sampleAt, lightDepths[i]);
-	}
 	
-	// Specular color determination ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// Specular color determination
 	// Assume albedo texture is actually holding specular color where metalness == 1
 	//
 	// Note the use of lerp here - metal is generally 0 or 1, but might be in between
 	// because of linear texture sampling, so we lerp the specular color to match
 	float3 specularColor = lerp(F0_NON_METAL.rrr, albedo.rgb, metallic);
+	
+	// Calculate simple reflections for objects with the skybox and apply them with a fresnel
+    float3 reflectDir = reflect(incident, input.normal);
+	// Blur the reflections based on the roughness of the material
+	// The blur effect is achieved cheaply by using lower mip map levels of the skybox for the reflections
+	// The reflection blur ramps up quickly towards max blurriness in a quadratic rather than linear way
+    float3 reflectColor = SkyCubeMap.SampleLevel(BasicSampler, reflectDir, pow(roughness, 0.3f) * (skyMipCount - 1)).rgb;
+	
+	// Get depth value of closest surface from each Shadow Map, then compare it to the actual depth of this pixel
+    float shadowAmount[MAX_NUM_SHADOW_MAPS];
+    for (int i = 0; i < MAX_NUM_SHADOW_MAPS; i++)
+    {
+		// float3(UVs to sample from, Shadow Map index in the array)
+        float3 sampleAt = float3(shadowUVs[i].x, shadowUVs[i].y, i);
+        shadowAmount[i] = ShadowMaps.SampleCmpLevelZero(ShadowSampler, sampleAt, lightDepths[i]);
+    }
 	
 	// Calculate the final color of this pixel ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// Calculate final unlit surface color
@@ -107,7 +120,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 			case LIGHT_TYPE_POINT:
 			{
 				float3 unshadowedColor = ColorFromLight(lights[i], input.normal, input.worldPosition, view, surfaceColor, specularColor, roughness, metallic);
-				float maxDot = 0.0f;
+				//float maxDot = 0.0f;
 				int directionIndex = 0;
 				// Find which Shadow Map to sample from by performing a dot product between the direction vector from the light to this pixel
 				// and each of the 6 directions to a cube face
@@ -115,8 +128,8 @@ float4 main(VertexToPixel input) : SV_TARGET
 				for (int j = 0; j < 6 && lights[i].castsShadows; j++)
 				{
 					float dotProduct = dot(normalize(input.worldPosition - lights[i].position), cubeFaceDirections[j]);
-					directionIndex = dotProduct > maxDot ? j : directionIndex;
-					maxDot = max(dotProduct, maxDot);
+					directionIndex = dotProduct >= 0.7f ? j : directionIndex;
+					//maxDot = max(dotProduct, maxDot);
 				}
 				// Use the sample only from the Shadow Map directly influencing this pixel
 				finalColor += unshadowedColor * (lights[i].castsShadows ? shadowAmount[shadowIndex + directionIndex] : 1.0f);
@@ -134,5 +147,10 @@ float4 main(VertexToPixel input) : SV_TARGET
 		}
 	}
 	
-	return float4(LightenToGamma(finalColor), 1);
+    finalColor = LightenToGamma(finalColor);
+	
+	// Apply reflections to the edges of all objects by interpolating their shaded color with the reflection color
+    finalColor = lerp(finalColor, reflectColor, Fresnel(view, input.normal, specularColor));
+	
+	return float4(finalColor, 1);
 }

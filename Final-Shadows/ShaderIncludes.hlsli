@@ -9,9 +9,6 @@
 
 // PBR CONSTANTS ===================
 
-// Make sure to place these at the top of your shader(s) or shader include file
-// - You don't necessarily have to keep all the comments; they're here for your reference
-
 // The fresnel value for non-metals (dielectrics)
 // Page 9: "F0 of nonmetals is now a constant 0.04"
 // http://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf

@@ -560,6 +560,10 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Animated Pixel Shader needs the totalTime var
 		ps->SetFloat("totalTime", totalTime);
 
+		// Reflections and ambient light data are sampled from the skybox
+		ps->SetShaderResourceView("SkyCubeMap", skybox->GetShaderResourceView());
+		ps->SetInt("skyMipCount", skybox->GetMipCount());
+
 		if (lights.size() > 0)
 		{
 			ps->SetData("lights", &lights[0], (int)lights.size() * sizeof(Light));

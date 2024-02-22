@@ -38,6 +38,8 @@ public:
 	~Sky();
 
 	void Draw(std::shared_ptr<Camera> camera, Microsoft::WRL::ComPtr<ID3D11DeviceContext> context);
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> GetShaderResourceView() { return textureSrv; }
+	const int GetMipCount() { return mipCount; }
 
 private:
 	// Helper for creating a cubemap from 6 individual textures
@@ -65,5 +67,6 @@ private:
 	std::shared_ptr<Mesh> mesh;
 	std::shared_ptr<SimpleVertexShader> vertexShader;
 	std::shared_ptr<SimplePixelShader> pixelShader;
+	const int mipCount = 10;
 };
 

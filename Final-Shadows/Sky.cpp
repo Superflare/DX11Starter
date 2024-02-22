@@ -109,15 +109,14 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Sky::CreateCubemap(
 {
 	// Load the 6 textures into an array.
 	// - We need references to the TEXTURES, not SHADER RESOURCE VIEWS!
-	// - Explicitly NOT generating mipmaps, as we don't need them for the sky!
 	// - Order matters here!  +X, -X, +Y, -Y, +Z, -Z
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> textures[6] = {};
-	CreateWICTextureFromFile(device.Get(), right, (ID3D11Resource**)textures[0].GetAddressOf(), 0);
-	CreateWICTextureFromFile(device.Get(), left, (ID3D11Resource**)textures[1].GetAddressOf(), 0);
-	CreateWICTextureFromFile(device.Get(), up, (ID3D11Resource**)textures[2].GetAddressOf(), 0);
-	CreateWICTextureFromFile(device.Get(), down, (ID3D11Resource**)textures[3].GetAddressOf(), 0);
-	CreateWICTextureFromFile(device.Get(), front, (ID3D11Resource**)textures[4].GetAddressOf(), 0);
-	CreateWICTextureFromFile(device.Get(), back, (ID3D11Resource**)textures[5].GetAddressOf(), 0);
+	CreateWICTextureFromFile(device.Get(), context.Get(), right, (ID3D11Resource**)textures[0].GetAddressOf(), 0);
+	CreateWICTextureFromFile(device.Get(), context.Get(), left, (ID3D11Resource**)textures[1].GetAddressOf(), 0);
+	CreateWICTextureFromFile(device.Get(), context.Get(), up, (ID3D11Resource**)textures[2].GetAddressOf(), 0);
+	CreateWICTextureFromFile(device.Get(), context.Get(), down, (ID3D11Resource**)textures[3].GetAddressOf(), 0);
+	CreateWICTextureFromFile(device.Get(), context.Get(), front, (ID3D11Resource**)textures[4].GetAddressOf(), 0);
+	CreateWICTextureFromFile(device.Get(), context.Get(), back, (ID3D11Resource**)textures[5].GetAddressOf(), 0);
 
 	// We'll assume all of the textures are the same color format and resolution,
 	// so get the description of the first shader resource view
@@ -130,13 +129,13 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Sky::CreateCubemap(
 	// C++ array of textures!!!
 	D3D11_TEXTURE2D_DESC cubeDesc = {};
 	cubeDesc.ArraySize = 6;            // Cube map!
-	cubeDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE; // We'll be using as a texture in a shader
+	cubeDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET; // We'll be using as a texture in a shader
 	cubeDesc.CPUAccessFlags = 0;       // No read back
 	cubeDesc.Format = faceDesc.Format; // Match the loaded texture's color format
 	cubeDesc.Width = faceDesc.Width;   // Match the size
 	cubeDesc.Height = faceDesc.Height; // Match the size
-	cubeDesc.MipLevels = 1;            // Only need 1
-	cubeDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE; // This should be treated as a CUBE, not 6 separate textures
+	cubeDesc.MipLevels = mipCount;            // Compute mip maps for blurry reflections
+	cubeDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE | D3D11_RESOURCE_MISC_GENERATE_MIPS; // This should be treated as a CUBE, not 6 separate textures
 	cubeDesc.Usage = D3D11_USAGE_DEFAULT; // Standard usage
 	cubeDesc.SampleDesc.Count = 1;
 	cubeDesc.SampleDesc.Quality = 0;
@@ -151,9 +150,9 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Sky::CreateCubemap(
 	{
 		// Calculate the subresource position to copy into
 		unsigned int subresource = D3D11CalcSubresource(
-			0,  // Which mip (zero, since there's only one)
+			0,  // Which mip (zero, the starting highest quality)
 			i,  // Which array element?
-			1); // How many mip levels are in the texture?
+			mipCount); // How many mip levels are in the texture?
 
 		// Copy from one resource (texture) to another
 		context->CopySubresourceRegion(
@@ -170,12 +169,15 @@ Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> Sky::CreateCubemap(
 	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Format = cubeDesc.Format;         // Same format as texture
 	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE; // Treat this as a cube!
-	srvDesc.TextureCube.MipLevels = 1;        // Only need access to 1 mip
+	srvDesc.TextureCube.MipLevels = mipCount;        // Compute mip maps for blurry reflections
 	srvDesc.TextureCube.MostDetailedMip = 0;  // Index of the first mip we want to see
 
 	// Make the SRV
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> cubeSRV;
 	device->CreateShaderResourceView(cubeMapTexture.Get(), &srvDesc, cubeSRV.GetAddressOf());
+
+	// Auto generate mip maps of the skybox for blurrier versions to use for reflections
+	context->GenerateMips(cubeSRV.Get());
 
 	// Send back the SRV, which is what we need for our shaders
 	return cubeSRV;
