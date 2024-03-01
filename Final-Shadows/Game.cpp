@@ -154,9 +154,9 @@ void Game::CreateEntities()
 	entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[0], GameEntityOptionFlags_MatWorldScale));
 
 	// Snowglobe scene
-	//entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[1]));
-	//entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[2]));
-	//entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[3]));
+	/*entities.push_back(std::make_shared<GameEntity>(meshes[1], materials[1]));
+	entities.push_back(std::make_shared<GameEntity>(meshes[2], materials[2]));
+	entities.push_back(std::make_shared<GameEntity>(meshes[3], materials[3]));*/
 
 	PositionGeometry();
 }
@@ -194,12 +194,14 @@ void Game::CreateMaterials()
 
 void Game::SetupLights()
 {
+	indirectLightIntensity = 0.5f;
+
 	// Directional lights
 	Light lDirectional = {};
 	lDirectional.type = LIGHT_TYPE_DIRECTIONAL;
 	lDirectional.direction = XMFLOAT3(-0.375f, -0.883f, 0.281f);
 	lDirectional.color = XMFLOAT3(0.828f, 0.936f, 1.0f);
-	lDirectional.intensity = 1.01f;
+	lDirectional.intensity = 0.8f;
 	lDirectional.castsShadows = 1;
 
 	// Point lights
@@ -283,7 +285,7 @@ void Game::SetupShadows(int resolution)
 
 	// Shadow Maps require a specific sampler to specify a comparison function, and the address mode
 	D3D11_SAMPLER_DESC shadowSamplerDesc = {};
-	shadowSamplerDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+	shadowSamplerDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR; // Trilinear filtering
 	shadowSamplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS;
 	shadowSamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
 	shadowSamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
@@ -466,14 +468,14 @@ void Game::PositionGeometry()
 	entities[2]->GetTransform()->SetScale(55.0f, 10.0f, 1.0f);
 
 	// Snowglobe scene
-	/*std::shared_ptr<GameEntity> snowglobe = entities[3];
+	/*std::shared_ptr<GameEntity> snowglobe = entities[0];
 
-	std::shared_ptr<GameEntity> christmasTree = entities[4];
+	std::shared_ptr<GameEntity> christmasTree = entities[1];
 	christmasTree->GetTransform()->SetScale(0.08f);
 	christmasTree->GetTransform()->SetPosition(-1.58f, 5.44f, -5.2f);
 	christmasTree->GetTransform()->RotatePitchYawRollWorld(0.f, Deg2Rad(-33.6f), 0.f);
 
-	std::shared_ptr<GameEntity> snowman = entities[5];
+	std::shared_ptr<GameEntity> snowman = entities[2];
 	snowman->GetTransform()->SetScale(.5f);
 	snowman->GetTransform()->SetPosition(3.47f, 5.29f, -4.98f);
 	snowman->GetTransform()->RotatePitchYawRollWorld(0.f, Deg2Rad(-88.2f), 0.f);*/
@@ -511,7 +513,7 @@ void Game::Update(float deltaTime, float totalTime)
 
 	UpdateUI(deltaTime);
 	ImGuiMenus::WindowStats(windowWidth, windowHeight);
-	ImGuiMenus::EditScene(camera, entities, materials, lights, device, context);
+	ImGuiMenus::EditScene(camera, entities, materials, lights, indirectLightIntensity, device, context);
 
 	// Update the camera
 	if (camera != 0)
@@ -563,6 +565,8 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Reflections and ambient light data are sampled from the skybox
 		ps->SetShaderResourceView("SkyCubeMap", skybox->GetShaderResourceView());
 		ps->SetInt("skyMipCount", skybox->GetMipCount());
+		// Indirect lighting data is then scaled by a global intensity
+		ps->SetFloat("indirectLightIntensity", indirectLightIntensity);
 
 		if (lights.size() > 0)
 		{

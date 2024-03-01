@@ -35,6 +35,7 @@ void ImGuiMenus::EditScene(
 	std::vector<std::shared_ptr<GameEntity>>& entities,
 	const std::vector<std::shared_ptr<Material>>& materials,
 	std::vector<Light>& lights,
+	float& indirectLightIntensity,
 	const Microsoft::WRL::ComPtr<ID3D11Device>& device,
 	const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context
 	)
@@ -266,6 +267,10 @@ void ImGuiMenus::EditScene(
 		//         After a transform change, shadows can be re-enabled to work properly again
 		if (ImGui::BeginTabItem("Lights"))
 		{
+			ImGui::PushItemWidth(150);
+			ImGui::DragFloat("Indirect Light Intensity", &indirectLightIntensity, 0.005f, 0.0f, 1.0f);
+			ImGui::PopItemWidth();
+
 			ImGui::Spacing();
 			
 			for (int i = 0; i < lights.size(); i++)

@@ -93,6 +93,8 @@ private:
 	int shadowMapResolution;
 	int numShadowMaps;
 
+	// UI Options
+	float indirectLightIntensity;
 
 	// Game objects
 	std::vector<std::shared_ptr<Mesh>> meshes;
