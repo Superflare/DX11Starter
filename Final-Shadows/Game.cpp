@@ -135,6 +135,7 @@ void Game::LoadShaders()
 void Game::CreateGeometry()
 {
 	meshes.push_back(std::make_shared<Mesh>("../../Assets/Models/cube.obj", device, context));
+	meshes.push_back(std::make_shared<Mesh>("../../Assets/Models/sphere.obj", device, context));
 
 	// Snowglobe scene
 	/*meshes.push_back(std::make_shared<Mesh>("../../Assets/Models/snowglobe.obj", device, context));
@@ -149,9 +150,12 @@ void Game::CreateEntities()
 	// Set up the Game Entity list using the pre-created meshes
 
 	// Testing scene
+	// Walls, Floor
 	entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[0], GameEntityOptionFlags_MatWorldScale));
 	entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[0], GameEntityOptionFlags_MatWorldScale));
 	entities.push_back(std::make_shared<GameEntity>(meshes[0], materials[0], GameEntityOptionFlags_MatWorldScale));
+	// Test Sphere
+	entities.push_back(std::make_shared<GameEntity>(meshes[1], materials[0], GameEntityOptionFlags_MatWorldScale));
 
 	// Snowglobe scene
 	/*entities.push_back(std::make_shared<GameEntity>(meshes[1], materials[1]));
@@ -466,6 +470,9 @@ void Game::PositionGeometry()
 	// Back wall
 	entities[2]->GetTransform()->SetPosition(45.0f, 10.0f, 10.0f);
 	entities[2]->GetTransform()->SetScale(55.0f, 10.0f, 1.0f);
+
+	// Sphere
+	entities[3]->GetTransform()->SetPosition(0, 3.0f, 0);
 
 	// Snowglobe scene
 	/*std::shared_ptr<GameEntity> snowglobe = entities[0];
