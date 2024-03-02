@@ -148,13 +148,13 @@ void Camera::Update(float dt)
 		float prevPitch = transform.GetRotationPitchYawRoll().x;
 		float pitch = 0;
 
-		pitch = Deg2Rad(mouseSpeed * dt * (float)cursorMovementY);
+		pitch = Deg2Rad(mouseSpeed * (float)cursorMovementY);
 
 		// Clamp the pitch rotation so the camera can't flip over and render upside down
 		if (prevPitch + pitch > Deg2Rad(89.8f) || prevPitch + pitch < Deg2Rad(-89.8f))
 			pitch = 0;
 
-		float yaw = Deg2Rad(mouseSpeed * dt * (float)cursorMovementX);
+		float yaw = Deg2Rad(mouseSpeed * (float)cursorMovementX);
 
 		//transform.Rotate(pitch, yaw, 0);
 
