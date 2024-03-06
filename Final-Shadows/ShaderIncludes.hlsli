@@ -5,7 +5,8 @@
 #define LIGHT_TYPE_POINT		1
 #define LIGHT_TYPE_SPOT			2
 #define MAX_SPECULAR_EXPONENT	256.0f
-#define MAX_NUM_SHADOW_MAPS 15
+#define MAX_NUM_SHADOW_CASCADES 6
+#define MAX_NUM_SHADOW_MAPS 16
 
 // PBR CONSTANTS ===================
 
@@ -75,7 +76,8 @@ struct VertexToPixel
 	float3 normal			: NORMAL;
 	float3 tangent			: TANGENT;
 	float3 worldPosition	: POSITION;
-	float4 shadowPositions[MAX_NUM_SHADOW_MAPS]	: SHADOW_POSITION;
+	float4 shadowCascadePositions[MAX_NUM_SHADOW_CASCADES]	: SHADOW_CASCADE_POSITION;
+    float4 shadowWorldPositions[MAX_NUM_SHADOW_MAPS]		: SHADOW_WORLD_POSITION;
 };
 
 struct VertexToPixelSky
@@ -83,6 +85,65 @@ struct VertexToPixelSky
 	float4 position		: SV_POSITION;
 	float3 sampleDir	: DIRECTION;
 };
+
+// HLSL math functions to avoid comparisons
+// Uses float4 types to allow for up to four comparisons at once
+// https://theorangeduck.com/page/avoiding-shader-conditionals
+float4 when_eq(float4 x, float4 y)
+{
+    return 1.0f - abs(sign(x - y));
+}
+float4 when_neq(float4 x, float4 y)
+{
+    return abs(sign(x - y));
+}
+float4 when_gt(float4 x, float4 y)
+{
+    return max(sign(x - y), 0.0f);
+}
+float4 when_lt(float4 x, float4 y)
+{
+    return max(sign(y - x), 0.0f);
+}
+float4 when_ge(float4 x, float4 y)
+{
+    return 1.0f - when_lt(x, y);
+}
+float4 when_le(float4 x, float4 y)
+{
+    return 1.0f - when_gt(x, y);
+}
+
+float4 and(float4 a, float4 b)
+{
+    return a * b;
+}
+float and_all(float4 a, float4 b)
+{
+    return a.x * a.y * a.z * a.w * b.x * b.y * b.z * b.w;
+}
+float4 or(float4 a, float4 b)
+{
+    return min(a + b, 1.0f);
+}
+float or_all(float4 a, float4 b)
+{
+    return saturate(a.x + a.y + a.z + a.w + b.x + b.y + b.z + b.w);
+}
+float4 xor(float4 a, float4 b)
+{
+    return (a + b) % 2.0f;
+}
+float4 not(float4 a)
+{
+    return 1.0f - a;
+}
+
+
+float LinearMapRange(float val, float imin, float imax, float omin, float omax)
+{
+    return omin + (val - imin) * ((omax - omin) / (imax - imin));
+}
 
 float3 LightenToGamma(float3 color) { return pow(color, 1/2.2f); }
 float3 DarkenToGamma(float3 color) { return pow(color, 2.2f); }
@@ -258,6 +319,14 @@ float3 ColorFromLight(Light light, float3 normal, float3 worldPos, float3 view, 
 		default:
 			return float3(0.f, 0.f, 0.f);
 	}
+}
+
+int CalcCascadeIndex(float3 positionFromCam, int cascadeCount, int distFurthestCascadeStart)
+{
+    float magnitude = distance(positionFromCam, float3(0, 0, 0));
+	
+    int index = round(LinearMapRange(magnitude, 0, distFurthestCascadeStart, 0, cascadeCount - 1));
+    return clamp(index, 0, cascadeCount - 1);
 }
 
 #endif

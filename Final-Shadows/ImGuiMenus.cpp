@@ -286,7 +286,7 @@ void ImGuiMenus::EditScene(
 					XMFLOAT3 position = lights[i].position;
 					float range = lights[i].range;
 					float intensity = lights[i].intensity;
-					float spotFalloff = lights[i].spotFalloff;
+					float spotFalloff = Rad2Deg(lights[i].spotFalloff);
 					bool castsShadows = (bool)lights[i].castsShadows;
 
 					ImGui::Spacing();
@@ -296,8 +296,13 @@ void ImGuiMenus::EditScene(
 					}
 					ImGui::Spacing();
 
-					if (castsShadows)
-						ImGui::BeginDisabled();
+					if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0, D3D11_FLOAT32_MAX))
+					{
+						lights[i].intensity = intensity;
+					}
+
+					/*if (castsShadows)
+						ImGui::BeginDisabled();*/
 
 					// Only display the light properties that will have an effect on the selected light
 					// (i.e. Point lights and spot lights have light falloff that directional lights don't have)
@@ -324,19 +329,14 @@ void ImGuiMenus::EditScene(
 
 					if (lights[i].type == LIGHT_TYPE_SPOT)
 					{
-						if (ImGui::DragFloat("Spot Falloff", &spotFalloff, 0.01f))
+						if (ImGui::DragFloat("Spot Falloff", &spotFalloff, 0.5f, 1.0f, 179.0f))
 						{
-							lights[i].spotFalloff = spotFalloff;
+							lights[i].spotFalloff = Deg2Rad(spotFalloff);
 						}
 					}
 
-					if (ImGui::DragFloat("Intensity", &intensity, 0.01f, 0, D3D11_FLOAT32_MAX))
-					{
-						lights[i].intensity = intensity;
-					}
-
-					if (castsShadows)
-						ImGui::EndDisabled();
+					/*if (castsShadows)
+						ImGui::EndDisabled();*/
 
 					if (ImGui::Checkbox("Casts Shadows?", &castsShadows))
 					{

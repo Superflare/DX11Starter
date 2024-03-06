@@ -92,7 +92,7 @@ void Game::Init()
 	CreateMaterials();
 	CreateEntities();
 	SetupLights();
-	SetupShadows(1024);
+	shadow = Shadow(2048, 1024, 4, device, context);
 
 	// Set initial graphics API state
 	//  - These settings persist until we change them
@@ -124,9 +124,6 @@ void Game::LoadShaders()
 
 	animatedPixelShader = std::make_shared<SimplePixelShader>(device, context,
 		FixPath(L"AnimatedPixelShader.cso").c_str());
-
-	shadowMapVertexShader = std::make_shared<SimpleVertexShader>(device, context,
-		FixPath(L"ShadowMapVertexShader.cso").c_str());
 }
 
 // --------------------------------------------------------
@@ -211,130 +208,27 @@ void Game::SetupLights()
 	// Point lights
 	Light lPoint = {};
 	lPoint.type = LIGHT_TYPE_POINT;
-	lPoint.position = XMFLOAT3(1.57f, 6.71f, -2.86f);
+	lPoint.position = XMFLOAT3(5.0f, 6.71f, -5.0f);
 	lPoint.color = XMFLOAT3(1.0f, 0.311f, 0.169f);
 	lPoint.intensity = 2.15f;
-	lPoint.range = 7.62f;
+	lPoint.range = 20.0f;
 	lPoint.castsShadows = 1;
+
+	// Spot lights
+	Light lSpot = {};
+	lSpot.type = LIGHT_TYPE_SPOT;
+	lSpot.position = XMFLOAT3(0, 3.0f, -2.0f);
+	lSpot.direction = XMFLOAT3(0, 0, 1.0f);
+	lSpot.color = XMFLOAT3(1, 1, 1);
+	lSpot.intensity = 1;
+	lSpot.range = 15;
+	lSpot.spotFalloff = Deg2Rad(90.0f);
+	lSpot.castsShadows = 1;
 
 	lights.push_back(lDirectional);
 	lights.push_back(lPoint);
+	lights.push_back(lSpot);
 }
-
-// --------------------------------------------------------
-// Creates reusable descriptions for Shadow Map resources
-// --------------------------------------------------------
-void Game::SetupShadows(int resolution)
-{
-	// Set class variables
-	shadowMapResolution = resolution;
-	numShadowMaps = 0;
-	prevLightShadowSettings.clear();
-	// Count the number of shadow maps required with the current lighting configuration
-	for (int i = 0; i < lights.size(); i++)
-	{
-		// Point lights require 6 shadow maps (A Texture Cube) while all other lights only require 1
-		if (lights[i].castsShadows == 1)
-			lights[i].type == LIGHT_TYPE_POINT ? numShadowMaps += 6 : numShadowMaps++;
-		
-		// Store the current state's shadow casting settings
-		// When the user changes whether a light casts shadows through the UI, it will be noticeable by comparing the
-		// light's current properties to this vector
-		prevLightShadowSettings.push_back(lights[i].castsShadows);
-	}
-
-	// The Depth Stencil View is always the same for every shadow map
-	// but needs to be recreated each time it wants to render to a new texture, so keep the description in local scope
-	shadowMapDsvDesc = {};
-	shadowMapDsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
-	shadowMapDsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-	shadowMapDsvDesc.Texture2D.MipSlice = 0;
-
-	// The description for an individual Texture2D Shadow Map
-	D3D11_TEXTURE2D_DESC shadowMapTextureDesc = {};
-	shadowMapTextureDesc.Width = shadowMapResolution;
-	shadowMapTextureDesc.Height = shadowMapResolution;
-	shadowMapTextureDesc.MipLevels = 1;
-	shadowMapTextureDesc.ArraySize = 1;
-	shadowMapTextureDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-	shadowMapTextureDesc.SampleDesc.Count = 1;
-	shadowMapTextureDesc.SampleDesc.Quality = 0;
-	shadowMapTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-	shadowMapTextureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
-	shadowMapTextureDesc.CPUAccessFlags = 0;
-	shadowMapTextureDesc.MiscFlags = 0;
-
-	// The description for an array of Shadow Maps
-	shadowMapTextureArrayDesc = {};
-	shadowMapTextureArrayDesc.Width = shadowMapResolution;
-	shadowMapTextureArrayDesc.Height = shadowMapResolution;
-	shadowMapTextureArrayDesc.MipLevels = 1;
-	shadowMapTextureArrayDesc.ArraySize = numShadowMaps;
-	shadowMapTextureArrayDesc.Format = DXGI_FORMAT_R32_TYPELESS;
-	shadowMapTextureArrayDesc.SampleDesc.Count = 1;
-	shadowMapTextureArrayDesc.SampleDesc.Quality = 0;
-	shadowMapTextureArrayDesc.Usage = D3D11_USAGE_DEFAULT;
-	shadowMapTextureArrayDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
-	shadowMapTextureArrayDesc.CPUAccessFlags = 0;
-	shadowMapTextureArrayDesc.MiscFlags = 0;
-
-	// The description for the Shader Resource View that will hold the Shadow Map array
-	shadowMapSrvDesc = {};
-	shadowMapSrvDesc.Format = DXGI_FORMAT_R32_FLOAT;
-	shadowMapSrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
-	shadowMapSrvDesc.Texture2DArray.ArraySize = numShadowMaps;
-	shadowMapSrvDesc.Texture2DArray.MipLevels = 1;
-	shadowMapSrvDesc.Texture2DArray.MostDetailedMip = 0;
-	shadowMapSrvDesc.Texture2DArray.FirstArraySlice = 0;
-
-	// Shadow Maps require a specific sampler to specify a comparison function, and the address mode
-	D3D11_SAMPLER_DESC shadowSamplerDesc = {};
-	shadowSamplerDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR; // Trilinear filtering
-	shadowSamplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS;
-	shadowSamplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
-	shadowSamplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
-	shadowSamplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
-	shadowSamplerDesc.BorderColor[0] = 1.0f;
-	shadowSamplerDesc.BorderColor[1] = 1.0f;
-	shadowSamplerDesc.BorderColor[2] = 1.0f;
-	shadowSamplerDesc.BorderColor[3] = 1.0f;
-	device->CreateSamplerState(&shadowSamplerDesc, shadowMapSampler.ReleaseAndGetAddressOf());
-
-	// Shadow Maps require a specific rasterizer to fix some common issues that arise from using Shadow Maps
-	// (i.e. Noise and Self-Shadowing) 
-	D3D11_RASTERIZER_DESC shadowRasterizerDesc = {};
-	shadowRasterizerDesc.FillMode = D3D11_FILL_SOLID;
-	shadowRasterizerDesc.CullMode = D3D11_CULL_BACK;
-	shadowRasterizerDesc.DepthClipEnable = true;
-	shadowRasterizerDesc.DepthBias = 1000;
-	shadowRasterizerDesc.DepthBiasClamp = 0.0f;
-	shadowRasterizerDesc.SlopeScaledDepthBias = 1.0f;
-	device->CreateRasterizerState(&shadowRasterizerDesc, shadowMapRasterizer.ReleaseAndGetAddressOf());
-
-	// Create each individual Texture2D that will be used as a depth buffer and turned into a Shadow Map
-	if (texShadowMaps.size() > 0)
-		texShadowMaps.clear();
-
-	for (int i = 0; i < lights.size(); i++)
-	{
-		if (lights[i].castsShadows == 1)
-		{
-			// Point lights require a Texture Cube while other lights only need 1 texture
-			int iterations = lights[i].type == LIGHT_TYPE_POINT ? 6 : 1;
-			for (int j = 0; j < iterations; j++)
-			{
-				Microsoft::WRL::ComPtr<ID3D11Texture2D> texShadowMap;
-				device->CreateTexture2D(&shadowMapTextureDesc, 0, texShadowMap.ReleaseAndGetAddressOf());
-
-				if (texShadowMap != 0)
-				{
-					texShadowMaps.push_back(texShadowMap);
-				}
-			}
-		}
-	}
-}
-
 
 void Game::LoadTextures()
 {
@@ -530,15 +424,7 @@ void Game::Update(float deltaTime, float totalTime)
 	
 	UpdateGeometry();
 
-	// Reset shadows when a light in the scene has started or stopped casting shadows
-	for (int i = 0; i < lights.size(); i++)
-	{
-		if (lights[i].castsShadows != prevLightShadowSettings[i])
-		{
-			SetupShadows(shadowMapResolution);
-			break;
-		}
-	}
+	shadow.Update(lights, device);
 }
 
 // --------------------------------------------------------
@@ -558,7 +444,19 @@ void Game::Draw(float deltaTime, float totalTime)
 		context->ClearDepthStencilView(depthBufferDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 	}
 
-	RenderShadowMaps();
+	shadow.Render(device, context, lights, entities, camera);
+	
+	// Reset rendering settings
+	context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), depthBufferDSV.Get());
+	D3D11_VIEWPORT standardViewport = {};
+	standardViewport.TopLeftX = 0;
+	standardViewport.TopLeftY = 0;
+	standardViewport.Width = (float)windowWidth;
+	standardViewport.Height = (float)windowHeight;
+	standardViewport.MinDepth = 0.0f;
+	standardViewport.MaxDepth = 1.0f;
+	context->RSSetViewports(1, &standardViewport);
+	context->RSSetState(0);
 
 	// Render all objects in the scene
 	for (int i = 0; i < entities.size(); i++)
@@ -577,18 +475,31 @@ void Game::Draw(float deltaTime, float totalTime)
 
 		if (lights.size() > 0)
 		{
+			// Lights data
 			ps->SetData("lights", &lights[0], (int)lights.size() * sizeof(Light));
-			// Send all of the Shadow Maps to the pixel shader through a Texture2DArray stored in an SRV
-			ps->SetShaderResourceView("ShadowMaps", srvShadowMapArray);
-			ps->SetSamplerState("ShadowSampler", shadowMapSampler);
+			ps->SetInt("lightCount", lights.size());
+
+			// Shadow data
+			// Send all of both types of Shadow Maps to the pixel shader through 2 Texture2DArrays stored in an SRVs
+			ps->SetShaderResourceView("ShadowMapsCascade", shadow.GetDirLightShadowSrv());
+			ps->SetInt("shadowCountCascade", shadow.GetNumCascadeShadowMaps());
+			ps->SetShaderResourceView("ShadowMapsWorld", shadow.GetWorldPosLightShadowSrv());
+			ps->SetInt("shadowCountWorld", shadow.GetNumWorldPosShadowMaps());
+			ps->SetSamplerState("ShadowSampler", shadow.GetSampler());
 		}
 
-		if (lightViewMatrices.size() > 0)
+		if (shadow.GetWorldPosLightViews().size() > 0)
 		{
 			// The vertex shader needs the view and projection matrices used to create each Shadow Map
 			// so that the pixel shader can interpret the Shadow Maps properly
-			vs->SetData("lightViews", &lightViewMatrices[0], numShadowMaps * sizeof(XMFLOAT4X4));
-			vs->SetData("lightProjs", &lightProjMatrices[0], numShadowMaps * sizeof(XMFLOAT4X4));
+			vs->SetData("lightViewsWorld", &shadow.GetWorldPosLightViews()[0], shadow.GetWorldPosLightViews().size() * sizeof(XMFLOAT4X4));
+			vs->SetData("lightProjsWorld", &shadow.GetWorldPosLightProjs()[0], shadow.GetWorldPosLightProjs().size() * sizeof(XMFLOAT4X4));
+		}
+
+		if (shadow.GetDirLightViews().size() > 0)
+		{
+			vs->SetData("lightViewCascade", &shadow.GetDirLightViews()[0], shadow.GetDirLightViews().size() * sizeof(XMFLOAT4X4));
+			vs->SetData("lightProjsCascade", &shadow.GetDirLightProjs()[0], shadow.GetDirLightProjs().size() * sizeof(XMFLOAT4X4));
 		}
 
 		entities[i]->Draw(context, camera);
@@ -600,6 +511,12 @@ void Game::Draw(float deltaTime, float totalTime)
 	// Draw ImGui UI
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+	// Unbind shadow map srvs since they will used again as a depth buffer
+	// before the next draw call. Still useful cleanup even though we create a new
+	// srv resource with each shadow map render.
+	ID3D11ShaderResourceView* nullSrvs[2] = {};
+	context->PSSetShaderResources(4, 2, nullSrvs); // Index is defined in shader
 
 	// Frame END
 	// - These should happen exactly ONCE PER FRAME
@@ -613,268 +530,4 @@ void Game::Draw(float deltaTime, float totalTime)
 		// Must re-bind buffers after presenting, as they become unbound
 		context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), depthBufferDSV.Get());
 	}
-}
-
-// --------------------------------------------------------
-// Handle all frame-by-frame shadow map implementation
-// --------------------------------------------------------
-void Game::RenderShadowMaps()
-{
-	lightViewMatrices.clear();
-	lightProjMatrices.clear();
-
-	// Set the renderer to the proper settings for only rendering depth buffers
-	context->RSSetState(shadowMapRasterizer.Get());
-	context->PSSetShader(0, 0, 0);
-
-	D3D11_VIEWPORT lightViewport = {};
-	lightViewport.TopLeftX = 0;
-	lightViewport.TopLeftY = 0;
-	lightViewport.Width = (float)shadowMapResolution;
-	lightViewport.Height = (float)shadowMapResolution;
-	lightViewport.MinDepth = 0.0f;
-	lightViewport.MaxDepth = 1.0f;
-	context->RSSetViewports(1, &lightViewport);
-
-	if (numShadowMaps > 0)
-	{
-		device->CreateTexture2D(&shadowMapTextureArrayDesc, 0, texShadowMapArray.ReleaseAndGetAddressOf());
-	}
-
-	// Render scene from the pov of each light that casts shadows, and store the depth buffer as a shadow map
-	int shadowIndex = 0;
-	for (int i = 0; i < lights.size(); i++)
-	{
-		if (lights[i].castsShadows == 1)
-		{
-			// This process is repeated 6 times for point lights
-			int iterations = lights[i].type == LIGHT_TYPE_POINT ? 6 : 1;
-			for (int j = 0; j < iterations; j++)
-			{
-				XMFLOAT4X4 lightView;
-				XMFLOAT4X4 lightProj;
-
-				// Create the view and projection matrices of the light based on its type
-				switch (lights[i].type)
-				{
-					case LIGHT_TYPE_DIRECTIONAL:
-					{
-						XMVECTOR lightDir = XMVector3Normalize(XMLoadFloat3(&lights[i].direction));
-						// Set the position of the directional light along the direction to the light starting from the world origin
-						// While it makes sense for the light to be far away from the scene (the sun) in order to preserve shadow quality,
-						// this position must be relatively close to the objects that will be mapped during this call
-						XMVECTOR position = -20 * lightDir;
-
-						// Setup the variables needed to rotate a new Transform object to match the light's direction
-						XMVECTOR forward = XMVectorSet(0.f, 0.f, 1.f, 1.f);
-						float dot;
-						XMStoreFloat(&dot, XMVector3Dot(forward, lightDir));
-						float angle = acos(dot);
-						XMVECTOR axis = XMVector3Cross(forward, lightDir);
-
-						// Use a Transform object to calculate the correct EyeDirection and UpDirection for the view matrix
-						Transform lightTransform = Transform();
-						lightTransform.SetRotation(XMQuaternionRotationAxis(axis, angle));
-						XMFLOAT3 lookDir = lightTransform.GetForward();
-						XMFLOAT3 upDir = lightTransform.GetUp();
-
-						XMStoreFloat4x4(&lightView,
-							XMMatrixLookToLH(
-								position,
-								XMLoadFloat3(&lookDir),
-								XMLoadFloat3(&upDir)
-							)
-						);
-
-						// Use an orthographic projection matrix because directional lights are meant to be
-						// light coming from every possible position along the specified direction
-						XMStoreFloat4x4(&lightProj,
-							XMMatrixOrthographicLH(
-								20,
-								20,
-								1.f,
-								200.f
-							)
-						);
-
-						break;
-					}
-
-					case LIGHT_TYPE_POINT:
-					{
-						// A point light is omnidirectional, so to map objects to a depth buffer in all directions, 6 depth buffers must be used
-						// Because of this, this code is repeated 6 times and each time uses a different axis direction pointing to one of the 6 faces of a cube
-						XMVECTOR lightDir = XMLoadFloat3(&cubeFaceDirections[j]);
-
-						// Setup the variables needed to rotate a new Transform object to match the light's direction
-						XMVECTOR forward = XMVectorSet(0.f, 0.f, 1.f, 1.f);
-						float dot;
-						XMStoreFloat(&dot, XMVector3Dot(forward, lightDir));
-						float angle = acos(dot);
-						XMVECTOR axis;
-						// Make sure the look direction and up direction are calculated correctly
-						// even when the light's direction lines up with the forward vector
-						if (dot != 1.f && dot != -1.f)
-						{
-							axis = XMVector3Cross(forward, lightDir);
-						}
-						else if (dot == 1.f)
-						{
-							axis = forward;
-						}
-						else
-						{
-							axis = XMVectorSet(0.f, 1.f, 0.f, 1.f);
-						}
-
-						// Use a Transform object to calculate the correct EyeDirection and UpDirection for the view matrix
-						Transform lightTransform = Transform();
-						lightTransform.SetRotation(XMQuaternionRotationAxis(axis, angle));
-						XMFLOAT3 lookDir = lightTransform.GetForward();
-						XMFLOAT3 upDir = lightTransform.GetUp();
-
-						XMStoreFloat4x4(&lightView,
-							XMMatrixLookToLH(
-								XMLoadFloat3(&lights[i].position),
-								XMLoadFloat3(&lookDir),
-								XMLoadFloat3(&upDir)
-							)
-						);
-
-						// Each projection matrix used is a frustum from the light's position to the entirety of one of its TextureCube faces
-						// This projection matrix only extends as far as the light's range
-						XMStoreFloat4x4(&lightProj,
-							XMMatrixPerspectiveFovLH(
-								90.f,
-								1.f,
-								0.1f,
-								lights[i].range
-							)
-						);
-
-						break;
-					}
-
-					case LIGHT_TYPE_SPOT:
-					{
-						XMVECTOR lightDir = XMVector3Normalize(XMLoadFloat3(&lights[i].direction));
-
-						// Setup the variables needed to rotate a new Transform object to match the light's direction
-						XMVECTOR forward = XMVectorSet(0.f, 0.f, 1.f, 1.f);
-						float dot;
-						XMStoreFloat(&dot, XMVector3Dot(forward, lightDir));
-						float angle = acos(dot);
-						XMVECTOR axis;
-						// Make sure the look direction and up direction are calculated correctly
-						// even when the light's direction lines up with the forward vector
-						if (dot != 1.f && dot != -1.f)
-						{
-							axis = XMVector3Cross(forward, lightDir);
-						}
-						else if (dot == 1.f)
-						{
-							axis = forward;
-						}
-						else
-						{
-							axis = XMVectorSet(0.f, 0.f, -1.f, 1.f);
-						}
-
-						// Use a Transform object to calculate the correct EyeDirection and UpDirection for the view matrix
-						Transform lightTransform = Transform();
-						lightTransform.SetRotation(XMQuaternionRotationAxis(axis, angle));
-						XMFLOAT3 lookDir = lightTransform.GetForward();
-						XMFLOAT3 upDir = lightTransform.GetUp();
-
-						XMStoreFloat4x4(&lightView,
-							XMMatrixLookToLH(
-								XMLoadFloat3(&lights[i].position),
-								XMLoadFloat3(&lookDir),
-								XMLoadFloat3(&upDir)
-							)
-						);
-
-						// The spotlight is the easier projection matrix to create because its range and frustum match up exactly with its matrix
-						// This matrix also uses an equal aspect ratio of 1
-						XMStoreFloat4x4(&lightProj,
-							XMMatrixPerspectiveFovLH(
-								Rad2Deg(lights[i].spotFalloff),
-								1.f,
-								0.1f,
-								lights[i].range
-							)
-						);
-
-						break;
-					}
-
-					default:
-						XMStoreFloat4x4(&lightView, XMMatrixIdentity());
-						XMStoreFloat4x4(&lightProj, XMMatrixIdentity());
-						break;
-				}
-
-				lightViewMatrices.push_back(lightView);
-				lightProjMatrices.push_back(lightProj);
-
-				// Clear the shadow map depth buffer
-				if (dsvShadowMap != 0)
-					context->ClearDepthStencilView(dsvShadowMap.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
-				// Set the Depth Stencil View to render to the next Texture2D in our list
-				device->CreateDepthStencilView(texShadowMaps[shadowIndex].Get(), &shadowMapDsvDesc, dsvShadowMap.ReleaseAndGetAddressOf());
-				context->OMSetRenderTargets(0, 0, dsvShadowMap.Get());
-
-				// Render all of the game entities in the scene to a depth buffer using a custom vertex shader
-				for (int i = 0; i < entities.size(); i++)
-				{
-					shadowMapVertexShader->SetShader();
-					shadowMapVertexShader->SetMatrix4x4("view", lightView);
-					shadowMapVertexShader->SetMatrix4x4("proj", lightProj);
-					shadowMapVertexShader->SetMatrix4x4("world", entities[i]->GetTransform()->GetWorldMatrix());
-					shadowMapVertexShader->CopyAllBufferData();
-					// Use the Mesh's draw method so no extra constant buffers or render settings are set
-					entities[i]->GetMesh()->Draw();
-				}
-
-				// Copy the Texture2D depth buffer that was just rendered into the Texture2DArray that will be sent to the pixel shader
-				// Calculate the subresource position to copy into
-				unsigned int subresource = D3D11CalcSubresource(0, shadowIndex, 1);
-
-				// Copy from the current individual Shadow Map to the Shadow Map Array
-				context->CopySubresourceRegion(
-					texShadowMapArray.Get(),
-					subresource,
-					0, 0, 0,
-					texShadowMaps[shadowIndex].Get(),
-					0,
-					0
-				);
-
-				// Move on to the next Shadow Map
-				shadowIndex++;
-			}
-		}
-	}
-
-	// Once all of the Shadow Maps have been rendered, and the texture array is stored with a copy of each,
-	// use the texture array as our Shader Resource
-	if (numShadowMaps > 0)
-	{
-		device->CreateShaderResourceView(texShadowMapArray.Get(), &shadowMapSrvDesc, srvShadowMapArray.ReleaseAndGetAddressOf());
-	}
-	
-	// Reset rendering settings
-	context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), depthBufferDSV.Get());
-	context->RSSetState(0);
-
-	D3D11_VIEWPORT standardViewport = {};
-	standardViewport.TopLeftX = 0;
-	standardViewport.TopLeftY = 0;
-	standardViewport.Width = (float)windowWidth;
-	standardViewport.Height = (float)windowHeight;
-	standardViewport.MinDepth = 0.0f;
-	standardViewport.MaxDepth = 1.0f;
-	context->RSSetViewports(1, &standardViewport);
-
-	context->RSSetState(0);
 }

@@ -1,17 +1,20 @@
 #include "ShaderIncludes.hlsli"
 
-#define NUM_LIGHTS 6
+#define MAX_NUM_LIGHTS 6
 
 cbuffer ExternalData : register(b0)
 {
 	float4 colorTint;
 	float roughnessFlat;
 	float3 cameraPosition;
-	Light lights[NUM_LIGHTS];
+    Light lights[MAX_NUM_LIGHTS];
 	float uvScale;
 	float metallicFlat;
 	float2 uvOffset;
     int skyMipCount;
+    int lightCount;
+    int shadowCountCascade;
+    int shadowCountWorld;
     float indirectLightIntensity;
 }
 
@@ -19,8 +22,9 @@ Texture2D Albedo					: register(t0);
 Texture2D NormalMap					: register(t1);
 Texture2D RoughnessMap				: register(t2);
 Texture2D MetallicMap				: register(t3);
-Texture2DArray<float4> ShadowMaps	: register(t4);
-TextureCube SkyCubeMap				: register(t5);
+Texture2DArray<float4> ShadowMapsCascade	: register(t4);
+Texture2DArray<float4> ShadowMapsWorld		: register(t5);
+TextureCube SkyCubeMap				: register(t6);
 
 SamplerState BasicSampler				: register(s0);
 SamplerComparisonState ShadowSampler	: register(s1);
@@ -46,7 +50,8 @@ float4 main(VertexToPixel input) : SV_TARGET
 	input.uv.x -= uvOffset.x;
 	input.uv.y += uvOffset.y;
 	
-	float3 view = normalize(cameraPosition - input.worldPosition);
+    float3 positionToCam = cameraPosition - input.worldPosition;
+	float3 view = normalize(positionToCam);
     float3 incident = -view;
 
 	// Sample values from textures ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -90,27 +95,61 @@ float4 main(VertexToPixel input) : SV_TARGET
     indirectDiffuse = DiffuseEnergyConserve(indirectDiffuse, specularColor, metallic);
 	
 	// Shadow Maps ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    int numLights = min(lightCount, MAX_NUM_LIGHTS);
+    int numShadowCascade = min(shadowCountCascade, MAX_NUM_SHADOW_CASCADES);
+    int numShadowWorld = min(shadowCountWorld, MAX_NUM_SHADOW_MAPS);
+	
+	// Directional Light Cascades ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    int cascadeIndex = CalcCascadeIndex(positionToCam, numShadowCascade, 125);
+	// Sample the correct shadow cascade map based on the pixel's distance from the camera
+	// and save the result of the depth buffer comparison
+	// Calculate distance from the directional light
+	
+	// Adjust [-1 to 1] range to be [0 to 1] for Shadow Map UVs
+    float2 shadowCascadeUVs = input.shadowCascadePositions[cascadeIndex].xy / input.shadowCascadePositions[cascadeIndex].w * 0.5f + 0.5f;
+    shadowCascadeUVs.y = 1.0f - shadowCascadeUVs.y; // Flip y
+    // If the pixel we're looking at is outside of the shadow map in its designated index, look at the next shadow map for accurate values
+    {
+		// if ((shadowCascadeUVs.x < 0.01f || shadowCascadeUVs.x > 0.99f || shadowCascadeUVs.y < 0.01f || shadowCascadeUVs.y > 0.99f) && cascadeIndex + 1 < numShadowCascade)
+        float4 lessThan = when_lt(float4(shadowCascadeUVs.x, shadowCascadeUVs.y, 0, 0), float4(0.01f, 0.01f, 0, 0));
+        float4 greatThan = when_gt(float4(shadowCascadeUVs.x, shadowCascadeUVs.y, 0, 0), float4(0.99f, 0.99f, 0, 0));
+        float validIndex = when_lt(cascadeIndex + 1, numShadowCascade);
+        cascadeIndex += 1 * or_all(lessThan, greatThan) * validIndex.x;
+        shadowCascadeUVs = input.shadowCascadePositions[cascadeIndex].xy / input.shadowCascadePositions[cascadeIndex].w * 0.5f + 0.5f;
+        shadowCascadeUVs.y = 1.0f - shadowCascadeUVs.y; // Flip y
+    }
+	// Because shadowPosition is not tagged as SV_POSITION we must do the perspective divide ourselves
+    float depthFromCascadeLight = input.shadowCascadePositions[cascadeIndex].z / input.shadowCascadePositions[cascadeIndex].w;
+	
+	// Get depth value of closest surface from the correct Shadow Map Cascade, then compare it to the actual depth of this pixel
+	// Stores a shadowed amount bool -- 0 is all shadow, 1 is no shadow
+	
+	// float3(UVs to sample from, Shadow Map index in the array)
+        float3 sampleAt = float3(shadowCascadeUVs.x, shadowCascadeUVs.y, cascadeIndex);
+    float shadowAmountCascade = ShadowMapsCascade.SampleCmpLevelZero(ShadowSampler, sampleAt, depthFromCascadeLight);
+	
+	// World Position Light Cascades ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// Sample shadow maps and save the result of the depth buffer comparison
-	// Stores the unshadowed amount -- 0 is all shadow, 1 is no shadow
 	// Calculate distance from each light that casts shadows
-    float lightDepths[MAX_NUM_SHADOW_MAPS];
-    float2 shadowUVs[MAX_NUM_SHADOW_MAPS];
-    for (int i = 0; i < MAX_NUM_SHADOW_MAPS; i++)
+    float depthFromWorldLights[MAX_NUM_SHADOW_MAPS];
+    float2 shadowWorldUVs[MAX_NUM_SHADOW_MAPS];
+    for (int i = 0; i < numShadowWorld; i++)
     {
 		// Because shadowPosition is not tagged as SV_POSITION we must do the perspective divide ourselves
-        lightDepths[i] = input.shadowPositions[i].z / input.shadowPositions[i].w;
+        depthFromWorldLights[i] = input.shadowWorldPositions[i].z / input.shadowWorldPositions[i].w;
 		// Adjust [-1 to 1] range to be [0 to 1] for Shadow Map UVs
-        shadowUVs[i] = input.shadowPositions[i].xy / input.shadowPositions[i].w * 0.5f + 0.5f;
-        shadowUVs[i].y = 1.0f - shadowUVs[i].y; // Flip y
+        shadowWorldUVs[i] = input.shadowWorldPositions[i].xy / input.shadowWorldPositions[i].w * 0.5f + 0.5f;
+        shadowWorldUVs[i].y = 1.0f - shadowWorldUVs[i].y; // Flip y
     }
 	
 	// Get depth value of closest surface from each Shadow Map, then compare it to the actual depth of this pixel
-    float shadowAmount[MAX_NUM_SHADOW_MAPS];
-    for (int i = 0; i < MAX_NUM_SHADOW_MAPS; i++)
+	// Stores a shadowed amount bool -- 0 is all shadow, 1 is no shadow
+    float shadowAmountWorld[MAX_NUM_SHADOW_MAPS];
+    for (int i = 0; i < numShadowWorld; i++)
     {
 		// float3(UVs to sample from, Shadow Map index in the array)
-        float3 sampleAt = float3(shadowUVs[i].x, shadowUVs[i].y, i);
-        shadowAmount[i] = ShadowMaps.SampleCmpLevelZero(ShadowSampler, sampleAt, lightDepths[i]);
+        float3 sampleAt = float3(shadowWorldUVs[i].x, shadowWorldUVs[i].y, i);
+        shadowAmountWorld[i] = ShadowMapsWorld.SampleCmpLevelZero(ShadowSampler, sampleAt, depthFromWorldLights[i]);
     }
 	
 	
@@ -120,7 +159,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float3 finalColor = 0;
 	// Add all light color values together
 	int shadowIndex = 0;
-	for (int i = 0; i < NUM_LIGHTS; i++)
+    for (int i = 0; i < numLights; i++)
 	{
 		// Lighting calculations with shadows for point lights are different from every other type of light
 		// Point lights have 6 Shadow Maps to look at while all other lights only have 1
@@ -141,16 +180,26 @@ float4 main(VertexToPixel input) : SV_TARGET
 					maxDot = max(dotProduct, maxDot);
 				}
 				// Use the sample only from the Shadow Map directly influencing this pixel
-				finalColor += unshadowedColor * (lights[i].castsShadows ? shadowAmount[shadowIndex + directionIndex] : 1.0f);
+				finalColor += unshadowedColor * (lights[i].castsShadows ? shadowAmountWorld[shadowIndex + directionIndex] : 1.0f);
 				shadowIndex = lights[i].castsShadows ? shadowIndex + 6 : shadowIndex;
 				break;
 			}
+			case LIGHT_TYPE_SPOT:
+			{
+				// Multiply the unshadowed color by the amount of light that should be able to reach this pixel because of shadows, if this light casts shadows
+                finalColor += ColorFromLight(lights[i], input.normal, input.worldPosition, view, surfaceColor, specularColor, roughness, metallic) * (lights[i].castsShadows ? shadowAmountWorld[shadowIndex] : 1.0f);
+				shadowIndex = lights[i].castsShadows ? shadowIndex + 1 : shadowIndex;
+                break;
+            }
+			case LIGHT_TYPE_DIRECTIONAL:
+			{
+				// Multiply the unshadowed color by the amount of light that should be able to reach this pixel because of shadows, if this light casts shadows
+                finalColor += ColorFromLight(lights[i], input.normal, input.worldPosition, view, surfaceColor, specularColor, roughness, metallic) * (lights[i].castsShadows ? shadowAmountCascade : 1.0f);
+                break;
+            }
 
 			default:
 			{
-				// Multiply the unshadowed color by the amount of light that should be able to reach this pixel because of shadows, if this light casts shadows
-				finalColor += ColorFromLight(lights[i], input.normal, input.worldPosition, view, surfaceColor, specularColor, roughness, metallic) * (lights[i].castsShadows ? shadowAmount[shadowIndex] : 1.0f);
-				shadowIndex = lights[i].castsShadows ? shadowIndex + 1 : shadowIndex;
 				break;
 			}
 		}

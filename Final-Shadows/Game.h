@@ -12,6 +12,7 @@
 #include "SimpleShader.h"
 #include "Lights.h"
 #include "Sky.h"
+#include "Shadow.h"
 
 class Game
 	: public DXCore
@@ -34,7 +35,6 @@ private:
 	void LoadShaders();
 	void CreateGeometry();
 	void LoadTextures();
-	void SetupShadows(int resolution);
 	void SetupLights();
 	void CreateMaterials();
 	void CreateEntities();
@@ -44,7 +44,6 @@ private:
 
 	void PositionGeometry();
 	void UpdateGeometry();
-	void RenderShadowMaps();
 
 	// Note the usage of ComPtr below
 	//  - This is a smart pointer for objects that abide by the
@@ -55,7 +54,6 @@ private:
 	std::shared_ptr<SimpleVertexShader> vertexShader;
 	std::shared_ptr<SimplePixelShader> pixelShader;
 	std::shared_ptr<SimplePixelShader> animatedPixelShader;
-	std::shared_ptr<SimpleVertexShader> shadowMapVertexShader;
 
 	// Textures, SRVs, and Sampler States
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvDefaultGrid;
@@ -65,33 +63,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvDefaultNormalMap;
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> texSampler;
 
-	// Shadow Map fields
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> dsvShadowMap;
-	std::vector<Microsoft::WRL::ComPtr<ID3D11Texture2D>> texShadowMaps;
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> texShadowMapArray;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> srvShadowMapArray;
-	Microsoft::WRL::ComPtr<ID3D11SamplerState> shadowMapSampler;
-	Microsoft::WRL::ComPtr<ID3D11RasterizerState> shadowMapRasterizer;
-
-	D3D11_DEPTH_STENCIL_VIEW_DESC shadowMapDsvDesc;
-	D3D11_TEXTURE2D_DESC shadowMapTextureArrayDesc;
-	D3D11_SHADER_RESOURCE_VIEW_DESC shadowMapSrvDesc;
-
-	std::vector<DirectX::XMFLOAT4X4> lightViewMatrices;
-	std::vector<DirectX::XMFLOAT4X4> lightProjMatrices;
-	std::vector<int> prevLightShadowSettings;
-	const std::vector<DirectX::XMFLOAT3> cubeFaceDirections = 
-	{
-		DirectX::XMFLOAT3(0.f, 0.f, 1.f),
-		DirectX::XMFLOAT3(1.f, 0.f, 0.f),
-		DirectX::XMFLOAT3(0.f, 0.f, -1.f),
-		DirectX::XMFLOAT3(-1.f, 0.f, 0.f),
-		DirectX::XMFLOAT3(0.f, 1.f, 0.f),
-		DirectX::XMFLOAT3(0.f, -1.f, 0.f)
-	};
-
-	int shadowMapResolution;
-	int numShadowMaps;
+	// Shadow handler
+	Shadow shadow;
 
 	// UI Options
 	float indirectLightIntensity;

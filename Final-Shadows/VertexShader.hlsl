@@ -6,8 +6,10 @@ cbuffer ExternalData : register(b0)
 	matrix worldInvTranspose;
 	matrix view;
 	matrix proj;
-	matrix lightViews[MAX_NUM_SHADOW_MAPS];
-	matrix lightProjs[MAX_NUM_SHADOW_MAPS];
+    matrix lightViewCascade;
+    matrix lightProjsCascade[MAX_NUM_SHADOW_CASCADES];
+	matrix lightViewsWorld[MAX_NUM_SHADOW_MAPS];
+	matrix lightProjsWorld[MAX_NUM_SHADOW_MAPS];
 }
 
 // --------------------------------------------------------
@@ -33,12 +35,20 @@ VertexToPixel main( VertexShaderInput input )
 	matrix wvp = mul(proj, mul(view, world));
 	output.screenPosition = mul(wvp, float4(input.localPosition, 1.0f));
 	
+	// Directional Cascade Shadows
 	// Do an additional position calculation for each Shadow Map being used
 	// using the view and projection matrices specific to the light casting this shadow
+    for (int i = 0; i < MAX_NUM_SHADOW_CASCADES; i++)
+    {
+        matrix lightWvp = mul(lightProjsCascade[i], mul(lightViewCascade, world));
+        output.shadowCascadePositions[i] = mul(lightWvp, float4(input.localPosition, 1.0f));
+    }
+	
+	// World Position Shadows
 	for (int i = 0; i < MAX_NUM_SHADOW_MAPS; i++)
 	{
-		matrix lightWvp = mul(lightProjs[i], mul(lightViews[i], world));
-		output.shadowPositions[i] = mul(lightWvp, float4(input.localPosition, 1.0f));
+		matrix lightWvp = mul(lightProjsWorld[i], mul(lightViewsWorld[i], world));
+		output.shadowWorldPositions[i] = mul(lightWvp, float4(input.localPosition, 1.0f));
 	}
 
 	// Pass the uv value through 
