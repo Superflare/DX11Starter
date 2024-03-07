@@ -241,6 +241,13 @@ void Shadow::Update(const std::vector<Light>& lights, const Microsoft::WRL::ComP
 
 void Shadow::UpdateTexNumber(int numCascades, int numWorldPosMaps, const Microsoft::WRL::ComPtr<ID3D11Device>& device)
 {
+	// Exit early if called before resources are initialized
+	if (m_DepthTexturesCascade.empty() || m_DepthTexturesWorld.empty() ||
+		!m_TexArrayCascade || !m_CascadeSrv || !m_TexArrayWorld || !m_WorldPosSrv)
+	{
+		return;
+	}
+
 	// Directional light cascade textures ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// Texture array counts only need to change when they are increased
 	// (i.e. A texture array only using 3 of its 5 array slices will still work fine and be read properly)
@@ -300,7 +307,8 @@ void Shadow::Resize(int cascadeHighestRes, int worldMapRes, const Microsoft::WRL
 		device->CreateTexture2D(&m_TexDescCascade, 0, t.ReleaseAndGetAddressOf());
 	}
 
-	device->CreateTexture2D(&m_TexArrayDescCascade, 0, m_TexArrayCascade.ReleaseAndGetAddressOf());
+	if (m_TexArrayCascade)
+		device->CreateTexture2D(&m_TexArrayDescCascade, 0, m_TexArrayCascade.ReleaseAndGetAddressOf());
 
 	// Point and spot light world position textures ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	m_WorldMapRes = worldMapRes;
@@ -316,7 +324,8 @@ void Shadow::Resize(int cascadeHighestRes, int worldMapRes, const Microsoft::WRL
 		device->CreateTexture2D(&m_TexDescWorld, 0, t.ReleaseAndGetAddressOf());
 	}
 
-	device->CreateTexture2D(&m_TexArrayDescWorld, 0, m_TexArrayWorld.ReleaseAndGetAddressOf());
+	if (m_TexArrayWorld)
+		device->CreateTexture2D(&m_TexArrayDescWorld, 0, m_TexArrayWorld.ReleaseAndGetAddressOf());
 }
 
 // --------------------------------------------------------
@@ -611,7 +620,7 @@ bool Shadow::CreateLightMatrices
 
 			// Each projection matrix used is a frustum from the light's position to the entirety of one of its TextureCube faces
 			// This projection matrix only extends as far as the light's range
-			XMStoreFloat4x4(&lightProj, XMMatrixPerspectiveFovLH(90.f, 1.f, 0.1f, l.range));
+			XMStoreFloat4x4(&lightProj, XMMatrixPerspectiveFovLH(Deg2Rad(90.1f), 1.f, 0.1f, l.range));
 
 			break;
 		}
@@ -653,7 +662,7 @@ bool Shadow::CreateLightMatrices
 
 			// The spotlight is the easier projection matrix to create because its range and frustum match up exactly with its matrix
 			// This matrix also uses an equal aspect ratio of 1
-			XMStoreFloat4x4(&lightProj, XMMatrixPerspectiveFovLH(Rad2Deg(l.spotFalloff), 1.f, 0.1f, l.range));
+			XMStoreFloat4x4(&lightProj, XMMatrixPerspectiveFovLH(l.spotFalloff, 1.f, 0.1f, l.range));
 
 			break;
 		}

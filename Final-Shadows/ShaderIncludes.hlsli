@@ -264,61 +264,52 @@ float3 MicrofacetBRDF(float3 n, float3 l, float3 v, float roughness, float3 spec
 }
 // =====================================================================================================
 
-
-float3 ColorFromLight(Light light, float3 normal, float3 worldPos, float3 view, float3 surfaceColor, float3 specularColor, float roughness, float metallic)
+// Final color functions for each light type
+float3 DirectionalLight(Light light, float3 normal, float3 view, float3 surfaceColor, float3 specularColor, float roughness, float metallic)
 {
-	switch(light.type)
-	{
-		case LIGHT_TYPE_DIRECTIONAL:
-		{
-			float3 dirToLight = normalize(-light.direction);
+    float3 dirToLight = normalize(-light.direction);
 			
-			float3 diffuse = Diffuse(dirToLight, normal);
-			float3 specular = MicrofacetBRDF(normal, dirToLight, view, roughness, specularColor);
-			// Caluclate diffuse with energy conservation
-			// (Reflected light doesn't get diffused)
-			diffuse = DiffuseEnergyConserve(diffuse, specular, metallic);
-			float3 total = (diffuse * surfaceColor + specular) * light.intensity * light.color;
+    float3 diffuse = Diffuse(dirToLight, normal);
+    float3 specular = MicrofacetBRDF(normal, dirToLight, view, roughness, specularColor);
+	// Caluclate diffuse with energy conservation
+	// (Reflected light doesn't get diffused)
+    diffuse = DiffuseEnergyConserve(diffuse, specular, metallic);
+    float3 total = (diffuse * surfaceColor + specular) * light.intensity * light.color;
 
-			return total;
-		}
+    return total;
+}
 
-		case LIGHT_TYPE_POINT:
-		{
-			float3 dirToLight = normalize(light.position - worldPos);
+float3 PointLight(Light light, float3 normal, float3 worldPos, float3 view, float3 surfaceColor, float3 specularColor, float roughness, float metallic)
+{
+    float3 dirToLight = normalize(light.position - worldPos);
 
-			float3 diffuse = Diffuse(dirToLight, normal);
-			float3 specular = MicrofacetBRDF(normal, dirToLight, view, roughness, specularColor);
-			// Caluclate diffuse with energy conservation
-			// (Reflected light doesn't get diffused)
-			diffuse = DiffuseEnergyConserve(diffuse, specular, metallic);
-			float3 total = (diffuse * surfaceColor + specular) * light.intensity * light.color * Attenuate(light, worldPos);
+    float3 diffuse = Diffuse(dirToLight, normal);
+    float3 specular = MicrofacetBRDF(normal, dirToLight, view, roughness, specularColor);
+	// Caluclate diffuse with energy conservation
+	// (Reflected light doesn't get diffused)
+    diffuse = DiffuseEnergyConserve(diffuse, specular, metallic);
+    float3 total = (diffuse * surfaceColor + specular) * light.intensity * light.color * Attenuate(light, worldPos);
 
-			return total;
-		}
-			
-		case LIGHT_TYPE_SPOT:
-		{
-			float3 dirToLight = normalize(light.position - worldPos);
-			float angleFromLight = acos(dot(normalize(-light.direction), dirToLight));
+    return total;
+}
 
-			// Only calculate the light value if this pixel is within the spotlight's cone
-			if (angleFromLight > light.spotFalloff / 2.0f)
-				return float3(0.f, 0.f, 0.f);
+float3 SpotLight(Light light, float3 normal, float3 worldPos, float3 view, float3 surfaceColor, float3 specularColor, float roughness, float metallic)
+{
+    float3 dirToLight = normalize(light.position - worldPos);
+    float angleFromLight = acos(dot(normalize(-light.direction), dirToLight));
+
+	// Only calculate the light value if this pixel is within the spotlight's cone
+    if (angleFromLight > light.spotFalloff / 2.0f)
+        return float3(0.f, 0.f, 0.f);
 				
-			float3 diffuse = Diffuse(dirToLight, normal);
-			float3 specular = MicrofacetBRDF(normal, dirToLight, view, roughness, specularColor);
-			// Caluclate diffuse with energy conservation
-			// (Reflected light doesn't get diffused)
-			diffuse = DiffuseEnergyConserve(diffuse, specular, metallic);
-			float3 total = (diffuse * surfaceColor + specular) * light.intensity * light.color * Attenuate(light, worldPos);
+    float3 diffuse = Diffuse(dirToLight, normal);
+    float3 specular = MicrofacetBRDF(normal, dirToLight, view, roughness, specularColor);
+	// Caluclate diffuse with energy conservation
+	// (Reflected light doesn't get diffused)
+    diffuse = DiffuseEnergyConserve(diffuse, specular, metallic);
+    float3 total = (diffuse * surfaceColor + specular) * light.intensity * light.color * Attenuate(light, worldPos);
 
-			return total;
-		}
-
-		default:
-			return float3(0.f, 0.f, 0.f);
-	}
+    return total;
 }
 
 int CalcCascadeIndex(float3 positionFromCam, int cascadeCount, int distFurthestCascadeStart)

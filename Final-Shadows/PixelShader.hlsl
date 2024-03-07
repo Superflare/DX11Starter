@@ -65,15 +65,13 @@ float4 main(VertexToPixel input) : SV_TARGET
 	float3 albedo = DarkenToGamma(Albedo.Sample(BasicSampler, input.uv).rgb);
 	
 	// Get roughness value from texture, if a texture is provided
-	float roughness = roughnessFlat;
-	if (roughnessFlat == -1)
-		roughness = RoughnessMap.Sample(BasicSampler, input.uv).r;
+    float useFlatRoughness = when_neq(roughnessFlat, -1);
+    float roughness = (roughnessFlat * useFlatRoughness) + (RoughnessMap.Sample(BasicSampler, input.uv).r * not(useFlatRoughness));
 	roughness = max(roughness, MIN_ROUGHNESS);
 	
 	// Get metallic value from texture, if a texture is provided
-	float metallic = metallicFlat;
-	if (metallicFlat == -1)
-		metallic = MetallicMap.Sample(BasicSampler, input.uv).r;
+    float useFlatMetallic = when_neq(metallicFlat, -1);
+    float metallic = (metallicFlat * useFlatMetallic) + (MetallicMap.Sample(BasicSampler, input.uv).r * not(useFlatMetallic));
 	
 	// Calculate PBR specific lighting values ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// Specular color determination
@@ -125,7 +123,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 	// Stores a shadowed amount bool -- 0 is all shadow, 1 is no shadow
 	
 	// float3(UVs to sample from, Shadow Map index in the array)
-        float3 sampleAt = float3(shadowCascadeUVs.x, shadowCascadeUVs.y, cascadeIndex);
+    float3 sampleAt = float3(shadowCascadeUVs.x, shadowCascadeUVs.y, cascadeIndex);
     float shadowAmountCascade = ShadowMapsCascade.SampleCmpLevelZero(ShadowSampler, sampleAt, depthFromCascadeLight);
 	
 	// World Position Light Cascades ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -167,7 +165,7 @@ float4 main(VertexToPixel input) : SV_TARGET
 		{
 			case LIGHT_TYPE_POINT:
 			{
-				float3 unshadowedColor = ColorFromLight(lights[i], input.normal, input.worldPosition, view, surfaceColor, specularColor, roughness, metallic);
+				float3 unshadowedColor = PointLight(lights[i], input.normal, input.worldPosition, view, surfaceColor, specularColor, roughness, metallic);
 				float maxDot = 0.0f;
 				int directionIndex = 0;
 				// Find which Shadow Map to sample from by performing a dot product between the direction vector from the light to this pixel
@@ -176,25 +174,26 @@ float4 main(VertexToPixel input) : SV_TARGET
 				for (int j = 0; j < 6 && lights[i].castsShadows; j++)
 				{
 					float dotProduct = dot(normalize(input.worldPosition - lights[i].position), cubeFaceDirections[j]);
-					directionIndex = dotProduct >= maxDot ? j : directionIndex;
+                    float isCloser = when_gt(dotProduct, maxDot);
+                    directionIndex = (j * isCloser) + (directionIndex * not(isCloser));
 					maxDot = max(dotProduct, maxDot);
 				}
 				// Use the sample only from the Shadow Map directly influencing this pixel
 				finalColor += unshadowedColor * (lights[i].castsShadows ? shadowAmountWorld[shadowIndex + directionIndex] : 1.0f);
-				shadowIndex = lights[i].castsShadows ? shadowIndex + 6 : shadowIndex;
+                shadowIndex = lights[i].castsShadows ? shadowIndex + 6 : shadowIndex;
 				break;
 			}
 			case LIGHT_TYPE_SPOT:
 			{
 				// Multiply the unshadowed color by the amount of light that should be able to reach this pixel because of shadows, if this light casts shadows
-                finalColor += ColorFromLight(lights[i], input.normal, input.worldPosition, view, surfaceColor, specularColor, roughness, metallic) * (lights[i].castsShadows ? shadowAmountWorld[shadowIndex] : 1.0f);
+                finalColor += SpotLight(lights[i], input.normal, input.worldPosition, view, surfaceColor, specularColor, roughness, metallic) * (lights[i].castsShadows ? shadowAmountWorld[shadowIndex] : 1.0f);
 				shadowIndex = lights[i].castsShadows ? shadowIndex + 1 : shadowIndex;
                 break;
             }
 			case LIGHT_TYPE_DIRECTIONAL:
 			{
 				// Multiply the unshadowed color by the amount of light that should be able to reach this pixel because of shadows, if this light casts shadows
-                finalColor += ColorFromLight(lights[i], input.normal, input.worldPosition, view, surfaceColor, specularColor, roughness, metallic) * (lights[i].castsShadows ? shadowAmountCascade : 1.0f);
+                finalColor += DirectionalLight(lights[i], input.normal, view, surfaceColor, specularColor, roughness, metallic) * (lights[i].castsShadows ? shadowAmountCascade : 1.0f);
                 break;
             }
 
